@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useState } from "react";
 
@@ -248,8 +248,11 @@ const loadSearchConsole = async (siteUrl: string) => {
         );
       }
 
-      setUrl(websiteUrl);
+     
+setUrl(websiteUrl);
 setAudit(data as AuditResult);
+
+await loadSearchConsole(websiteUrl);
 
 
     } catch (err) {
