@@ -1004,7 +1004,7 @@ await loadSearchConsole(websiteUrl);
             </div>
 
             <p className="text-xs text-emerald-700">
-              {searchConsole.period?.startDate} ?{" "}
+              {searchConsole.period?.startDate} →{" "}
               {searchConsole.period?.endDate}
             </p>
           </div>
