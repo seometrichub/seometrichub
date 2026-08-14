@@ -20,6 +20,7 @@ export async function GET(request: Request) {
 
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const siteUrl = searchParams.get("state");
 
     if (error) {
       return NextResponse.json(
@@ -35,6 +36,15 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           error: "Authorization code is missing.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!siteUrl) {
+      return NextResponse.json(
+        {
+          error: "Website URL is missing from OAuth state.",
         },
         { status: 400 }
       );
@@ -62,45 +72,74 @@ export async function GET(request: Request) {
       permissionLevel: site.permissionLevel || "",
     }));
 
-    const response = NextResponse.json({
-      success: true,
-      message: "Google Search Console connected successfully.",
-      sites,
+    const normalizedRequestedUrl = siteUrl
+      .replace(/\/+$/, "")
+      .toLowerCase();
+
+    const matchingSite = sites.find((site) => {
+      const normalizedSiteUrl = site.siteUrl
+        .replace(/\/+$/, "")
+        .toLowerCase();
+
+      return (
+        normalizedSiteUrl === normalizedRequestedUrl ||
+        normalizedSiteUrl ===
+          `sc-domain:${normalizedRequestedUrl.replace(
+            /^https?:\/\//,
+            ""
+          )}`
+      );
     });
 
-    /*
-     * Development session cookie.
-     *
-     * HTTP-only means browser JavaScript cannot read the token.
-     * The token is therefore not exposed through the URL.
-     */
-    if (tokens.access_token) {
-      response.cookies.set(
-        "gsc_access_token",
-        tokens.access_token,
+    if (!matchingSite) {
+      return NextResponse.json(
         {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 60 * 60,
-        }
+          success: false,
+          connected: false,
+          error:
+            "Your Google account does not have access to this Search Console property.",
+          requestedSite: siteUrl,
+          availableSites: sites,
+        },
+        { status: 403 }
       );
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      connected: true,
+      message: "Google Search Console connected successfully.",
+      requestedSite: siteUrl,
+      connectedSite: matchingSite,
+    });
+
+    if (tokens.access_token) {
+      response.cookies.set("gsc_access_token", tokens.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60,
+      });
     }
 
     if (tokens.refresh_token) {
-      response.cookies.set(
-        "gsc_refresh_token",
-        tokens.refresh_token,
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 60 * 60 * 24 * 30,
-        }
-      );
+      response.cookies.set("gsc_refresh_token", tokens.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
     }
+
+    response.cookies.set("gsc_site_url", siteUrl, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
 
     return response;
   } catch (error: any) {

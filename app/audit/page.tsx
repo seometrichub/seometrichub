@@ -252,8 +252,6 @@ const loadSearchConsole = async (siteUrl: string) => {
 setUrl(websiteUrl);
 setAudit(data as AuditResult);
 
-await loadSearchConsole(websiteUrl);
-
 
     } catch (err) {
       console.error("Audit request failed:", err);
@@ -944,11 +942,11 @@ await loadSearchConsole(websiteUrl);
       </div>
 
       <a
-        href="/api/auth/google"
-        className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0F172A] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1E293B]"
-      >
-        Connect Google Search Console (Optional)
-      </a>
+  href={`/api/auth/google?siteUrl=${encodeURIComponent(url)}`}
+  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0F172A] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1E293B]"
+>
+  Connect Google Search Console (Optional)
+</a>
     </div>
 
     {/* LOADING */}
