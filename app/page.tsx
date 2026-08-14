@@ -99,32 +99,31 @@ export default function Home() {
               and attract more customers with smarter digital marketing tools.
             </p>
 
-            {/* Buttons */}
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+           {/* Buttons */}
+<div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
 
-              {/* Primary */}
-              <a
-                href="#tools"
-                className="
-                  inline-flex items-center justify-center gap-2
-                  rounded-xl
-                  bg-[#F97316]
-                  px-8 py-4
-                  text-sm font-black text-white
-                  shadow-lg shadow-orange-500/10
-                  transition-all duration-200
-                  hover:-translate-y-0.5
-                  hover:bg-[#EA580C]
-                  hover:shadow-xl
-                  hover:shadow-orange-500/20
-                "
-              >
-                Start Free Audit
-                <span className="text-lg">
-                  →
-                </span>
-              </a>
-
+  {/* Primary */}
+  <a
+    href="/audit"
+    className="
+      inline-flex items-center justify-center gap-2
+      rounded-xl
+      bg-[#F97316]
+      px-8 py-4
+      text-sm font-black text-white
+      shadow-lg shadow-orange-500/10
+      transition-all duration-200
+      hover:-translate-y-0.5
+      hover:bg-[#EA580C]
+      hover:shadow-xl
+      hover:shadow-orange-500/20
+    "
+  >
+    Start Free Audit
+    <span className="text-lg">
+      →
+    </span>
+  </a>
               {/* Secondary */}
               <a
                 href="#pricing"
@@ -229,7 +228,7 @@ export default function Home() {
               <div className="mt-5 space-y-3 text-sm">
 
                 <a
-                  href="#tools"
+                href="/audit"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
                 >
                   SEO Tools

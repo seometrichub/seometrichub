@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 const stats = [
   { value: "10K+", label: "Websites Analyzed" },
   { value: "50K+", label: "Keywords Tracked" },
@@ -5,6 +9,9 @@ const stats = [
 ];
 
 export default function Hero() {
+  const [url, setUrl] = useState("");
+
+  
   return (
     <section className="relative overflow-hidden bg-white">
 
@@ -17,7 +24,6 @@ export default function Hero() {
       <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 sm:px-6 sm:pb-24 sm:pt-20 lg:px-8 lg:pb-28 lg:pt-24">
 
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-
           {/* =========================
               LEFT CONTENT
           ========================== */}
@@ -61,8 +67,10 @@ export default function Hero() {
                   </span>
 
                   <input
-                    type="url"
-                    placeholder="Enter your website URL"
+  type="url"
+  value={url}
+  onChange={(e) => setUrl(e.target.value)}
+  placeholder="Enter your website URL"
                     className="
                       w-full
                       bg-transparent
@@ -77,21 +85,30 @@ export default function Hero() {
                 </div>
 
                 <button
-                  type="button"
-                  className="
-                    min-h-14
-                    rounded-xl
-                    bg-[#F97316]
-                    px-7
-                    text-sm
-                    font-bold
-                    text-white
-                    transition-all
-                    hover:-translate-y-0.5
-                    hover:bg-[#EA580C]
-                    hover:shadow-lg
-                    hover:shadow-orange-200
-                  "
+  type="button"
+  onClick={() => {
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl) {
+      return;
+    }
+
+    window.location.href = `/audit?url=${encodeURIComponent(trimmedUrl)}`;
+  }}
+  className="
+    min-h-14
+    rounded-xl
+    bg-[#F97316]
+    px-7
+    text-sm
+    font-bold
+    text-white
+    transition-all
+    hover:-translate-y-0.5
+    hover:bg-[#EA580C]
+    hover:shadow-lg
+    hover:shadow-orange-200
+  "
                 >
                   Start Free Audit
                   <span className="ml-2">
