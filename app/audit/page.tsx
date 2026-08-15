@@ -1,6 +1,8 @@
 ﻿"use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
 
 type BacklinkData = {
   available: boolean;
@@ -133,7 +135,9 @@ const checks = [
   "SEO Opportunities",
 ];
 
-export default function AuditPage() {
+function AuditPageContent() {
+  const searchParams = useSearchParams();
+
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -146,18 +150,26 @@ const [searchConsoleLoading, setSearchConsoleLoading] =
 
 const [searchConsoleError, setSearchConsoleError] =
   useState("");
-  useEffect(() => {
-    if (!audit) return;
 
-    const timer = setTimeout(() => {
-      document.getElementById("audit-results")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 150);
+useEffect(() => {
+  const queryUrl = searchParams.get("url");
 
-    return () => clearTimeout(timer);
-  }, [audit]);
+  if (queryUrl) {
+    setUrl(queryUrl);
+  }
+}, [searchParams]);
+useEffect(() => {
+  if (!audit) return;
+
+  const timer = setTimeout(() => {
+    document.getElementById("audit-results")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 150);
+
+  return () => clearTimeout(timer);
+}, [audit]);
 const loadSearchConsole = async (siteUrl: string) => {
   setSearchConsoleLoading(true);
   setSearchConsoleError("");
@@ -252,7 +264,6 @@ const loadSearchConsole = async (siteUrl: string) => {
 setUrl(websiteUrl);
 setAudit(data as AuditResult);
 
-await loadSearchConsole(websiteUrl);
 
 
     } catch (err) {
@@ -944,11 +955,11 @@ await loadSearchConsole(websiteUrl);
       </div>
 
       <a
-        href="/api/auth/google"
-        className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0F172A] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1E293B]"
-      >
-        Connect Google Search Console (Optional)
-      </a>
+  href={`/api/auth/google?siteUrl=${encodeURIComponent(url)}`}
+  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#0F172A] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1E293B]"
+>
+  Connect Google Search Console (Optional)
+</a>
     </div>
 
     {/* LOADING */}
@@ -2078,4 +2089,23 @@ function getScoreMessage(score: number): string {
 
   return "Poor — important SEO issues need attention";
 }
+
+
+
+
+
+export default function AuditPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#F8FAFC] px-5 py-20 text-center text-[#0F172A]">
+          <p className="text-lg font-bold">Loading SEO Audit...</p>
+        </main>
+      }
+    >
+      <AuditPageContent />
+    </Suspense>
+  );
+}
+
 

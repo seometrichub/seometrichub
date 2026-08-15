@@ -1,4 +1,4 @@
-import Navbar from "@/components/layout/Navbar";
+﻿import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/sections/Hero";
 import Stats from "@/components/sections/Stats";
 import Features from "@/components/sections/Features";
@@ -104,7 +104,7 @@ export default function Home() {
 
               {/* Primary */}
               <a
-                href="#tools"
+                href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
                 className="
                   inline-flex items-center justify-center gap-2
                   rounded-xl
@@ -121,7 +121,7 @@ export default function Home() {
               >
                 Start Free Audit
                 <span className="text-lg">
-                  →
+                  â†’
                 </span>
               </a>
 
@@ -150,17 +150,17 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
 
               <span className="flex items-center gap-2">
-                <span className="text-[#F97316]">✓</span>
+                <span className="text-[#F97316]">âœ“</span>
                 SEO Tools
               </span>
 
               <span className="flex items-center gap-2">
-                <span className="text-[#F97316]">✓</span>
+                <span className="text-[#F97316]">âœ“</span>
                 AI Marketing
               </span>
 
               <span className="flex items-center gap-2">
-                <span className="text-[#F97316]">✓</span>
+                <span className="text-[#F97316]">âœ“</span>
                 Business Growth
               </span>
 
@@ -229,7 +229,7 @@ export default function Home() {
               <div className="mt-5 space-y-3 text-sm">
 
                 <a
-                  href="#tools"
+                  href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
                 >
                   SEO Tools
@@ -293,7 +293,7 @@ export default function Home() {
           <div className="mt-12 flex flex-col gap-4 border-t border-slate-200 pt-8 sm:flex-row sm:items-center sm:justify-between">
 
             <p className="text-sm text-[#94A3B8]">
-              © 2026 SEOMETRICHUB. All rights reserved.
+              Â© 2026 SEOMETRICHUB. All rights reserved.
             </p>
 
             <div className="flex items-center gap-5 text-sm">
