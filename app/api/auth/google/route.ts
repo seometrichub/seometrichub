@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
 export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
@@ -10,31 +12,18 @@ export async function GET(request: Request) {
     if (!clientId || !clientSecret || !redirectUri) {
       return NextResponse.json(
         {
-          error: "Google OAuth credentials are not configured.",
+          error: "Google OAuth environment variables are not configured.",
         },
         { status: 500 }
       );
     }
 
-    const { searchParams } = new URL(request.url);
+    const siteUrl = searchParams.get("siteUrl");
 
-    const code = searchParams.get("code");
-    const error = searchParams.get("error");
-
-    if (error) {
+    if (!siteUrl) {
       return NextResponse.json(
         {
-          error: "Google OAuth authorization failed.",
-          details: error,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!code) {
-      return NextResponse.json(
-        {
-          error: "Authorization code is missing.",
+          error: "Website URL is required.",
         },
         { status: 400 }
       );
@@ -46,55 +35,22 @@ export async function GET(request: Request) {
       redirectUri
     );
 
-    const { tokens } = await oauth2Client.getToken(code);
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      prompt: "consent",
+      state: siteUrl,
+      scope: [
+        "https://www.googleapis.com/auth/webmasters.readonly",
+      ],
+    });
 
-    const response = NextResponse.redirect(
-      new URL("/audit", request.url)
-    );
-
-    if (tokens.access_token) {
-      response.cookies.set(
-        "gsc_access_token",
-        tokens.access_token,
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 60 * 60,
-        }
-      );
-    }
-
-    if (tokens.refresh_token) {
-      response.cookies.set(
-        "gsc_refresh_token",
-        tokens.refresh_token,
-        {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
-          maxAge: 60 * 60 * 24 * 30,
-        }
-      );
-    }
-
-    return response;
-  } catch (error: any) {
-    console.error(
-      "Google Search Console OAuth callback error:",
-      error
-    );
+    return NextResponse.redirect(authUrl);
+  } catch (error) {
+    console.error("Google OAuth start error:", error);
 
     return NextResponse.json(
       {
-        success: false,
-        error: "Google Search Console connection failed.",
-        details:
-          error?.response?.data?.error_description ||
-          error?.message ||
-          "Unknown error",
+        error: "Failed to start Google OAuth.",
       },
       { status: 500 }
     );

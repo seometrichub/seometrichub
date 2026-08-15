@@ -120,9 +120,7 @@ export default function Home() {
                 "
               >
                 Start Free Audit
-                <span className="text-lg">
-                  â†’
-                </span>
+                <span className="text-lg">&#8594;</span>
               </a>
 
               {/* Secondary */}
@@ -145,8 +143,7 @@ export default function Home() {
               </a>
 
             </div>
-
-            {/* Trust Text */}
+{/* Trust Text */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
 
               <span className="flex items-center gap-2">
@@ -229,7 +226,7 @@ export default function Home() {
               <div className="mt-5 space-y-3 text-sm">
 
                 <a
-                  href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
+href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
                 >
                   SEO Tools
@@ -323,3 +320,6 @@ export default function Home() {
     </main>
   );
 }
+
+
+

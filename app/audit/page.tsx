@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -265,7 +265,6 @@ setUrl(websiteUrl);
 setAudit(data as AuditResult);
 
 
-
     } catch (err) {
       console.error("Audit request failed:", err);
 
@@ -306,7 +305,7 @@ setAudit(data as AuditResult);
             href="/"
             className="text-sm font-semibold text-[#475569] transition hover:text-[#F97316]"
           >
-            ← Back to Home
+            ? Back to Home
           </a>
         </div>
       </header>
@@ -362,7 +361,7 @@ setAudit(data as AuditResult);
                 disabled={analyzing}
                 className="h-14 rounded-xl bg-[#F97316] px-7 font-bold text-white transition-all hover:bg-[#EA580C] hover:shadow-lg hover:shadow-orange-200 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {analyzing ? "Analyzing..." : "Analyze Website →"}
+                {analyzing ? "Analyzing..." : "Analyze Website ?"}
               </button>
             </div>
 
@@ -393,7 +392,7 @@ setAudit(data as AuditResult);
                 className="flex items-center gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-lg font-black text-[#F97316]">
-                  ✓
+                  ?
                 </div>
 
                 <span className="font-bold text-[#0F172A]">
@@ -415,7 +414,7 @@ setAudit(data as AuditResult);
             {/* AUDIT COMPLETE */}
             <div className="text-center">
               <span className="inline-flex rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-bold text-green-600">
-                ✓ Audit Complete
+                ? Audit Complete
               </span>
 
               <h2 className="mt-5 text-4xl font-black text-[#0F172A] sm:text-5xl">
@@ -564,7 +563,7 @@ setAudit(data as AuditResult);
                   value={`${safeNumber(audit.details?.h1Count)}`}
                   extra={
                     audit.details?.h1Count === 1
-                      ? "One H1 tag detected — ideal."
+                      ? "One H1 tag detected � ideal."
                       : audit.details?.h1Count === 0
                       ? "No H1 tag found. Add one clear primary H1."
                       : "Multiple H1 tags found. Review heading structure."
@@ -843,7 +842,7 @@ setAudit(data as AuditResult);
                       ? "Title length is within the recommended range."
                       : `Current title length: ${safeNumber(
                           audit.details?.titleLength
-                        )} characters. Recommended: 30–60 characters.`
+                        )} characters. Recommended: 30�60 characters.`
                   }
                 />
 
@@ -859,7 +858,7 @@ setAudit(data as AuditResult);
                       ? "Meta description length is within the recommended range."
                       : `Current description length: ${safeNumber(
                           audit.details?.descriptionLength
-                        )} characters. Recommended: 70–160 characters.`
+                        )} characters. Recommended: 70�160 characters.`
                   }
                 />
 
@@ -1015,7 +1014,7 @@ setAudit(data as AuditResult);
             </div>
 
             <p className="text-xs text-emerald-700">
-              {searchConsole.period?.startDate} →{" "}
+              {searchConsole.period?.startDate} ?{" "}
               {searchConsole.period?.endDate}
             </p>
           </div>
@@ -1233,7 +1232,7 @@ setAudit(data as AuditResult);
                 onClick={runAnotherAudit}
                 className="mt-7 inline-flex rounded-xl bg-[#F97316] px-7 py-3.5 font-bold text-white transition hover:bg-[#EA580C]"
               >
-                Run Another Audit →
+                Run Another Audit ?
               </button>
             </div>
           </div>
@@ -1244,7 +1243,7 @@ setAudit(data as AuditResult);
       <footer className="border-t border-[#E2E8F0] bg-white">
         <div className="mx-auto max-w-7xl px-5 py-8 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-[#94A3B8]">
-            © 2026 SEOMETRICHUB. All rights reserved.
+            � 2026 SEOMETRICHUB. All rights reserved.
           </p>
         </div>
       </footer>
@@ -1302,7 +1301,7 @@ function MetaIntelligenceCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-xl font-black text-[#F97316]">
-              ✦
+              ?
             </div>
 
             <div>
@@ -1542,7 +1541,7 @@ function MetaWeakness({
               : "bg-orange-100 text-orange-600"
           }`}
         >
-          {good ? "✓" : "!"}
+          {good ? "?" : "!"}
         </div>
 
         <div>
@@ -1893,7 +1892,7 @@ function BacklinkCard({
       </p>
 
       <p className="mt-3 text-4xl font-black text-[#0F172A]">
-        {hasValue ? value : "—"}
+        {hasValue ? value : "�"}
       </p>
 
       <p className="mt-2 text-sm leading-6 text-[#94A3B8]">
@@ -1913,7 +1912,7 @@ function RecommendationCard({
   const isSuccess = recommendation.type === "success";
   const isError = recommendation.type === "error";
 
-  const icon = isSuccess ? "✓" : "!";
+  const icon = isSuccess ? "?" : "!";
   const iconClass = isSuccess
     ? "bg-green-50 text-green-600"
     : isError
@@ -2014,7 +2013,7 @@ function AuditIssue({
             : "bg-orange-50 text-orange-600"
         }`}
       >
-        {passed ? "✓" : "!"}
+        {passed ? "?" : "!"}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -2076,18 +2075,18 @@ function getScoreMessage(score: number): string {
   const safeScore = clampScore(score);
 
   if (safeScore >= 90) {
-    return "Excellent — your website is well optimized";
+    return "Excellent � your website is well optimized";
   }
 
   if (safeScore >= 75) {
-    return "Good — room for improvement";
+    return "Good � room for improvement";
   }
 
   if (safeScore >= 50) {
-    return "Needs Work — several improvements are recommended";
+    return "Needs Work � several improvements are recommended";
   }
 
-  return "Poor — important SEO issues need attention";
+  return "Poor � important SEO issues need attention";
 }
 
 
@@ -2107,5 +2106,6 @@ export default function AuditPage() {
     </Suspense>
   );
 }
+
 
 
