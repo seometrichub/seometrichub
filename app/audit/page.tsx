@@ -566,7 +566,7 @@ setAudit(data as AuditResult);
                       ? "One H1 tag detected — ideal."
                       : audit.details?.h1Count === 0
                       ? "No H1 tag found. Add one clear primary H1."
-                      : "Multiple H1 tags found. Review heading structure."
+                      : "Multiple H1 tags found. Check heading structure."
                   }
                   warning={audit.details?.h1Count !== 1}
                 />
@@ -720,7 +720,7 @@ setAudit(data as AuditResult);
                     </h3>
 
                     <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-bold text-orange-600">
-                      Review Required
+                      Needs Improvement
                     </span>
                   </div>
 
@@ -1480,7 +1480,7 @@ function MetaAnalysisBox({
               : "bg-orange-50 text-orange-600"
           }`}
         >
-          {good ? "Good" : "Review"}
+          {good ? "Good" : "Needs Improvement"}
         </span>
       </div>
 
@@ -1596,7 +1596,7 @@ function RecommendedMetaBox({
             good ? "text-green-600" : "text-orange-600"
           }`}
         >
-          {good ? "Within range" : "Review length"}
+          {good ? "Within range" : "Needs Improvement"}
         </span>
       </div>
     </div>
@@ -1668,7 +1668,7 @@ function getTitleWeakness(
     return "The title is longer than the recommended range and may be truncated in search results.";
   }
 
-  return "The title length is within the recommended range. Review keyword relevance and search intent as the next step.";
+  return "The title length is within the recommended range. Check keyword relevance and search intent as the next step.";
 }
 
 function getDescriptionWeakness(
@@ -1790,7 +1790,7 @@ function DetailCard({
               : "bg-green-50 text-green-600"
           }`}
         >
-          {warning ? "Review" : "Good"}
+          {warning ? "Needs Improvement" : "Good"}
         </span>
       </div>
 
@@ -2033,7 +2033,7 @@ function AuditIssue({
             : "bg-orange-50 text-orange-600"
         }`}
       >
-        {passed ? "Passed" : "Review"}
+        {passed ? "Passed" : "Needs Improvement"}
       </span>
     </div>
   );
