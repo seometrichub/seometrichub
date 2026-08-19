@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -985,6 +985,8 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
 
   const candidates: string[] = [];
 
+  const priorityCandidates: string[] = [];
+
   // Jobs & Recruitment
   if (
     lowerTopic.includes("job") ||
@@ -992,7 +994,7 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
     lowerTopic.includes("employment")
   ) {
     if (brand) {
-      candidates.push(
+      priorityCandidates.push(
         `Find the latest jobs and recruitment updates from ${brand}. Get government jobs, private jobs, exam notifications and recruitment alerts.`,
         `Explore the latest job opportunities, government jobs, private vacancies, exam notifications and recruitment updates from ${brand}.`
       );
@@ -1006,7 +1008,7 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
     lowerTopic.includes("technology")
   ) {
     if (brand) {
-      candidates.push(
+      priorityCandidates.push(
         `Explore AI tools, prompts, technology updates and practical resources from ${brand}. Discover useful ideas and tools for everyday work and learning.`,
         `Discover useful AI tools, prompts, technology insights and practical resources from ${brand}.`
       );
@@ -1019,7 +1021,7 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
     lowerTopic.includes("seo")
   ) {
     if (brand) {
-      candidates.push(
+      priorityCandidates.push(
         `Explore practical SEO, digital marketing, content marketing and social media strategies from ${brand} to improve online growth.`,
         `Discover SEO strategies, digital marketing tips, content marketing ideas and social media insights from ${brand}.`
       );
@@ -1032,7 +1034,7 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
     lowerTopic.includes("food")
   ) {
     if (brand) {
-      candidates.push(
+      priorityCandidates.push(
         `Discover easy recipes, cooking ideas, useful food tips and meal inspiration from ${brand} for everyday cooking.`,
         `Explore delicious recipes, cooking ideas and helpful food tips from ${brand}.`
       );
@@ -1045,7 +1047,7 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
     lowerTopic.includes("tourism")
   ) {
     if (brand) {
-      candidates.push(
+      priorityCandidates.push(
         `Explore travel destinations, places to visit, useful travel tips and trip information from ${brand}.`,
         `Discover travel guides, destinations, places to visit and useful tourism information from ${brand}.`
       );
@@ -1059,7 +1061,7 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
     lowerTopic.includes("learning")
   ) {
     if (brand) {
-      candidates.push(
+      priorityCandidates.push(
         `Discover engaging kids stories, moral stories, bedtime stories and educational learning resources from ${brand} for children and families.`,
         `Explore kids stories, educational stories and learning resources from ${brand}, with engaging content for children and families.`,
         `Discover inspiring stories, moral lessons and educational learning content from ${brand} for children and families.`
@@ -1118,8 +1120,25 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
         .filter(Boolean)
     ),
   ];
+  const cleanedPriorityCandidates = [
+    ...new Set(
+      priorityCandidates
+        .map(cleanMetaDescription)
+        .filter(Boolean)
+    ),
+  ];
 
-  // Prefer descriptions within the recommended 70–160 character range.
+  const priorityIdeal = cleanedPriorityCandidates.filter(
+    (value) => value.length >= 70 && value.length <= 160
+  );
+
+  if (priorityIdeal.length) {
+    return priorityIdeal.sort(
+      (a, b) =>
+        Math.abs(125 - a.length) - Math.abs(125 - b.length)
+    )[0];
+  }
+  // Prefer descriptions within the recommended 70?160 character range.
   const ideal = cleanedCandidates.filter(
     (value) => value.length >= 70 && value.length <= 160
   );
@@ -1210,7 +1229,7 @@ function cleanTopic(value: string, brand: string): string {
         " ",
       )
       .replace(/\s+/g, " ")
-      .replace(/^[&|,:;\-–—\s]+|[&|,:;\-–—\s]+$/g, "")
+      .replace(/^[&|,:;\-??\s]+|[&|,:;\-??\s]+$/g, "")
       .trim();
 
     // Only remove the brand when the remaining phrase is
