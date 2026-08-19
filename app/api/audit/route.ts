@@ -978,68 +978,174 @@ function buildRecommendedMetaDescription(context: ContentContext): string {
   const brand = cleanBrandName(context.brand);
   const topic = cleanTopic(context.topic, brand);
   const lowerTopic = topic.toLowerCase();
+  const signals = context.signals
+    .map(cleanHtmlText)
+    .map(cleanSuggestionPhrase)
+    .filter(Boolean);
+
   const candidates: string[] = [];
 
-  if (lowerTopic.includes("job") || lowerTopic.includes("recruitment") || lowerTopic.includes("employment")) {
-    if (topic && brand) candidates.push(`Find the latest ${topic.toLowerCase()} updates from ${brand}. Get government jobs, private jobs, exam notifications and recruitment alerts.`, `Explore the latest ${topic.toLowerCase()} updates, government jobs, private vacancies, exam notifications and recruitment alerts from ${brand}.`);
-    else if (brand) candidates.push(`Get the latest government jobs, private jobs, exam notifications and recruitment updates from ${brand}.`);
-  } else if (lowerTopic.includes("ai") || lowerTopic.includes("prompt") || lowerTopic.includes("technology")) {
-    if (topic && brand) candidates.push(`Explore ${topic.toLowerCase()} with ${brand}. Discover useful AI tools, prompts, technology updates and practical resources.`, `Discover ${topic.toLowerCase()} resources, useful AI tools, prompts and technology updates from ${brand}.`);
-  } else if (lowerTopic.includes("digital marketing") || lowerTopic.includes("seo")) {
-    if (topic && brand) candidates.push(`Explore ${topic.toLowerCase()} strategies with ${brand}. Learn SEO, content marketing, social media and practical growth techniques.`, `Discover practical ${topic.toLowerCase()} tips, SEO strategies, content marketing and social media insights from ${brand}.`);
-  } else if (lowerTopic.includes("recipe") || lowerTopic.includes("food")) {
-    if (topic && brand) candidates.push(`Discover delicious ${topic.toLowerCase()} recipes from ${brand}, with easy cooking ideas, useful tips and meal inspiration.`, `Explore ${topic.toLowerCase()} recipes, cooking ideas and helpful food tips from ${brand}.`);
-  } else if (lowerTopic.includes("travel") || lowerTopic.includes("tourism")) {
-    if (topic && brand) candidates.push(`Explore ${topic.toLowerCase()} with ${brand}. Discover destinations, travel tips, places to visit and useful trip information.`, `Discover ${topic.toLowerCase()} destinations, travel guides, places to visit and useful tourism information from ${brand}.`);
-  } else if (lowerTopic.includes("kids") || lowerTopic.includes("stories") || lowerTopic.includes("learning")) {
-    if (topic && brand) candidates.push(`Explore ${topic.toLowerCase()} with ${brand}. Discover engaging stories, learning content and useful educational resources for children and families.`, `Discover ${topic.toLowerCase()}, educational content, stories and useful learning resources for children and families.`);
-  }
-
-  if (topic && brand) candidates.push(`Explore ${topic.toLowerCase()} with ${brand}. Discover useful information, practical resources and helpful content for readers.`, `Discover useful ${topic.toLowerCase()} information, resources and practical content from ${brand}.`);
-  if (topic) candidates.push(`Explore ${topic.toLowerCase()} and discover useful information, practical resources and helpful content.`);
-  if (brand) candidates.push(`Explore ${brand} for useful information, practical resources, helpful guides and the latest updates.`);
-
-    const cleanedCandidates = [...new Set(candidates.map(cleanMetaDescription).filter(Boolean))];
-
-  // Prioritize specific job-related recommendations when the website is
-  // identified as a Jobs & Recruitment website.
+  // Jobs & Recruitment
   if (
     lowerTopic.includes("job") ||
     lowerTopic.includes("recruitment") ||
     lowerTopic.includes("employment")
   ) {
-    const jobSpecific = cleanedCandidates.filter(
-      (value) =>
-        /government jobs/i.test(value) &&
-        /private jobs/i.test(value) &&
-        /exam notifications/i.test(value),
-    );
-
-    if (jobSpecific.length) {
-      return jobSpecific.sort(
-        (a, b) => Math.abs(135 - a.length) - Math.abs(135 - b.length),
-      )[0];
+    if (brand) {
+      candidates.push(
+        `Find the latest jobs and recruitment updates from ${brand}. Get government jobs, private jobs, exam notifications and recruitment alerts.`,
+        `Explore the latest job opportunities, government jobs, private vacancies, exam notifications and recruitment updates from ${brand}.`
+      );
     }
   }
 
+  // AI, Technology & Prompts
+  else if (
+    lowerTopic.includes("ai") ||
+    lowerTopic.includes("prompt") ||
+    lowerTopic.includes("technology")
+  ) {
+    if (brand) {
+      candidates.push(
+        `Explore AI tools, prompts, technology updates and practical resources from ${brand}. Discover useful ideas and tools for everyday work and learning.`,
+        `Discover useful AI tools, prompts, technology insights and practical resources from ${brand}.`
+      );
+    }
+  }
+
+  // Digital Marketing & SEO
+  else if (
+    lowerTopic.includes("digital marketing") ||
+    lowerTopic.includes("seo")
+  ) {
+    if (brand) {
+      candidates.push(
+        `Explore practical SEO, digital marketing, content marketing and social media strategies from ${brand} to improve online growth.`,
+        `Discover SEO strategies, digital marketing tips, content marketing ideas and social media insights from ${brand}.`
+      );
+    }
+  }
+
+  // Recipes & Food
+  else if (
+    lowerTopic.includes("recipe") ||
+    lowerTopic.includes("food")
+  ) {
+    if (brand) {
+      candidates.push(
+        `Discover easy recipes, cooking ideas, useful food tips and meal inspiration from ${brand} for everyday cooking.`,
+        `Explore delicious recipes, cooking ideas and helpful food tips from ${brand}.`
+      );
+    }
+  }
+
+  // Travel & Tourism
+  else if (
+    lowerTopic.includes("travel") ||
+    lowerTopic.includes("tourism")
+  ) {
+    if (brand) {
+      candidates.push(
+        `Explore travel destinations, places to visit, useful travel tips and trip information from ${brand}.`,
+        `Discover travel guides, destinations, places to visit and useful tourism information from ${brand}.`
+      );
+    }
+  }
+
+  // Kids Stories & Learning
+  else if (
+    lowerTopic.includes("kids") ||
+    lowerTopic.includes("stories") ||
+    lowerTopic.includes("learning")
+  ) {
+    if (brand) {
+      candidates.push(
+        `Discover engaging kids stories, moral stories, bedtime stories and educational learning resources from ${brand} for children and families.`,
+        `Explore kids stories, educational stories and learning resources from ${brand}, with engaging content for children and families.`,
+        `Discover inspiring stories, moral lessons and educational learning content from ${brand} for children and families.`
+      );
+    } else {
+      candidates.push(
+        `Discover engaging kids stories, moral stories, bedtime stories and educational learning resources for children and families.`,
+        `Explore kids stories, educational stories and useful learning resources for children and families.`
+      );
+    }
+  }
+
+  // Use detected content signals when available.
+  for (const signal of signals.slice(0, 5)) {
+    const cleaned = signal
+      .replace(
+        /\b(home|homepage|welcome|menu|navigation|read more|learn more)\b/gi,
+        ""
+      )
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (cleaned.length >= 20 && cleaned.length <= 80) {
+      if (brand && cleaned.toLowerCase() !== brand.toLowerCase()) {
+        candidates.push(
+          `Explore ${cleaned.toLowerCase()} with ${brand}. Discover useful information, engaging content and practical resources.`
+        );
+      }
+    }
+  }
+
+  // Generic but still useful fallback.
+  if (topic && brand) {
+    candidates.push(
+      `Explore ${topic.toLowerCase()} with ${brand}. Discover useful information, practical resources and helpful content for readers.`,
+      `Discover useful ${topic.toLowerCase()} information, resources and practical content from ${brand}.`
+    );
+  }
+
+  if (topic) {
+    candidates.push(
+      `Explore ${topic.toLowerCase()} and discover useful information, practical resources and helpful content.`
+    );
+  }
+
+  if (brand) {
+    candidates.push(
+      `Explore ${brand} for useful information, practical resources, helpful guides and the latest updates.`
+    );
+  }
+
+  const cleanedCandidates = [
+    ...new Set(
+      candidates
+        .map(cleanMetaDescription)
+        .filter(Boolean)
+    ),
+  ];
+
+  // Prefer descriptions within the recommended 70–160 character range.
   const ideal = cleanedCandidates.filter(
-    (value) => value.length >= 70 && value.length <= 160,
+    (value) => value.length >= 70 && value.length <= 160
   );
 
   if (ideal.length) {
     return ideal.sort(
-      (a, b) => Math.abs(125 - a.length) - Math.abs(125 - b.length),
+      (a, b) =>
+        Math.abs(125 - a.length) - Math.abs(125 - b.length)
     )[0];
   }
 
+  // If no ideal candidate exists, choose the closest candidate
+  // and safely trim it to the maximum recommended length.
   const closest = cleanedCandidates.sort(
-    (a, b) => Math.abs(125 - a.length) - Math.abs(125 - b.length),
+    (a, b) =>
+      Math.abs(125 - a.length) - Math.abs(125 - b.length)
   )[0];
 
-  return closest
-    ? closest.slice(0, 160).trim()
+   return closest
+       ? closest.slice(0, 160).replace(/\s+\S*$/, "").trim()
     : "Explore useful information, practical resources, helpful guides and the latest updates.";
 }
+
+
+
+
 
 function cleanBrandName(value: string): string {
   if (!value) return "";
@@ -1056,14 +1162,12 @@ function cleanBrandName(value: string): string {
 
   const lower = brand.toLowerCase();
 
-  // Common multi-word brand/domain names.
   if (lower === "freejobnotifications") return "Free Job Notifications";
   if (lower === "free job notifications") return "Free Job Notifications";
 
   if (lower === "vkkidsstories") return "VK Kids Stories";
   if (lower === "vk kids stories") return "VK Kids Stories";
 
-  // Preserve established uppercase brand names.
   if (/^[A-Z0-9]+$/.test(brand)) return brand;
 
   return brand
