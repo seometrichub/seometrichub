@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -314,22 +314,15 @@ export async function POST(request: Request) {
     else if (htmlSizeKB > 150) pagePerformanceScore -= 5;
     pagePerformanceScore = clampScore(pagePerformanceScore);
 
-    let seoOpportunitiesScore = 100;
-    if (!hasH1) seoOpportunitiesScore -= 25;
-    else if (h1Count > 1) seoOpportunitiesScore -= 10;
+   let seoOpportunitiesScore = 100;
 
-    if (!hasTitle) seoOpportunitiesScore -= 15;
-    else if (titleLength < 30 || titleLength > 60) seoOpportunitiesScore -= 5;
+if (!hasCanonical) seoOpportunitiesScore -= 15;
+if (!robotsTxt) seoOpportunitiesScore -= 15;
+if (!sitemap) seoOpportunitiesScore -= 15;
+if (internalLinks === 0) seoOpportunitiesScore -= 15;
+if (!favicon) seoOpportunitiesScore -= 10;
 
-    if (!hasDescription) seoOpportunitiesScore -= 15;
-    else if (descriptionLength < 70 || descriptionLength > 160) seoOpportunitiesScore -= 5;
-
-    if (imagesWithoutAlt > 0) seoOpportunitiesScore -= 15;
-    if (!hasCanonical) seoOpportunitiesScore -= 10;
-    if (!robotsTxt) seoOpportunitiesScore -= 10;
-    if (!sitemap) seoOpportunitiesScore -= 10;
-    if (internalLinks === 0) seoOpportunitiesScore -= 10;
-    seoOpportunitiesScore = clampScore(seoOpportunitiesScore);
+seoOpportunitiesScore = clampScore(seoOpportunitiesScore);
 
     const overallScore = Math.round(
       technicalSeoScore * 0.15 +
@@ -694,12 +687,42 @@ function getRecommendedAlt(src: string, baseUrl: string): string {
         .pop()
         ?.replace(/\.[^/.]+$/, "") || "";
 
-    const cleaned = decodeURIComponent(filename)
-      .replace(/\b(cropped?|image|img|photo|picture|pic|logo)\b/gi, " ")
+    const rawName = decodeURIComponent(filename);
+
+    const isLogo =
+      /\b(cropped?|logo|brand|site[-_ ]?logo|header[-_ ]?logo)\b/i.test(rawName);
+
+    let cleaned = rawName
+      .replace(/\b(cropped?|image|img|photo|picture|pic|logo|brand)\b/gi, " ")
       .replace(/[-_]+/g, " ")
       .replace(/\d{2,}/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+
+    if (isLogo) {
+      const hostname = parsed.hostname
+        .replace(/^www\./i, "")
+        .split(".")[0]
+        .replace(/[-_]+/g, " ")
+        .trim();
+
+      const brand = hostname
+        ? hostname
+            .split(" ")
+            .filter(Boolean)
+            .map(
+              (word) =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+            )
+            .join(" ")
+        : "";
+
+      if (brand) {
+        return `${brand} logo`;
+      }
+
+      return "Website logo";
+    }
 
     if (!cleaned) {
       return "Descriptive image alt text";
@@ -724,7 +747,6 @@ function getRecommendedAlt(src: string, baseUrl: string): string {
     return "Descriptive image alt text";
   }
 }
-
 function getTitleQuality(length: number): "missing" | "tooShort" | "ideal" | "tooLong" | "acceptable" {
   if (length === 0) return "missing";
   if (length < 30) return "tooShort";
