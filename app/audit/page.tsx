@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -18,6 +18,7 @@ type Recommendation = {
   title: string;
   description: string;
   recommendedTitle?: string;
+  recommendedH1?: string;
   recommendedMetaDescription?: string;
 };
 type SearchConsoleQuery = {
@@ -1957,21 +1958,37 @@ function RecommendationCard({
             {recommendation.description}
           </p>
 
-          {recommendation.recommendedTitle && (
-            <div className="mt-4 rounded-xl border border-orange-100 bg-white p-4">
-              <p className="text-xs font-black uppercase tracking-wider text-[#F97316]">
-                Recommended Title
-              </p>
+            {recommendation.recommendedH1 && (
+              <div className="mt-4 rounded-xl border border-orange-100 bg-white p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-[#F97316]">
+                  Recommended H1
+                </p>
 
-              <p className="mt-2 break-words text-sm font-bold leading-6 text-[#0F172A]">
-                {recommendation.recommendedTitle}
-              </p>
+                <p className="mt-2 break-words text-sm font-bold leading-6 text-[#0F172A]">
+                  {recommendation.recommendedH1}
+                </p>
 
-              <p className="mt-2 text-xs text-[#94A3B8]">
-                {recommendation.recommendedTitle.length} characters
-              </p>
-            </div>
-          )}
+                <p className="mt-2 text-xs text-[#94A3B8]">
+                  {recommendation.recommendedH1.length} characters
+                </p>
+              </div>
+            )}
+
+            {recommendation.recommendedTitle && (
+              <div className="mt-4 rounded-xl border border-orange-100 bg-white p-4">
+                <p className="text-xs font-black uppercase tracking-wider text-[#F97316]">
+                  Recommended Title
+                </p>
+
+                <p className="mt-2 break-words text-sm font-bold leading-6 text-[#0F172A]">
+                  {recommendation.recommendedTitle}
+                </p>
+
+                <p className="mt-2 text-xs text-[#94A3B8]">
+                  {recommendation.recommendedTitle.length} characters
+                </p>
+              </div>
+            )}
 
           {recommendation.recommendedMetaDescription && (
             <div className="mt-4 rounded-xl border border-orange-100 bg-white p-4">

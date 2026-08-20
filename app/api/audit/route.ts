@@ -22,6 +22,7 @@ type Recommendation = {
   title: string;
   description: string;
   recommendedTitle?: string;
+  recommendedH1?: string;
   recommendedMetaDescription?: string;
 };
 
@@ -763,9 +764,10 @@ function buildRecommendations({
   const context = buildContentContext(title, description, visibleText, hostname, h1Texts, h2Texts);
   const recommendedTitle = buildRecommendedTitle(context);
   const recommendedMetaDescription = buildRecommendedMetaDescription(context);
+  const recommendedH1 = buildRecommendedH1(context);
 
   if (h1Count === 0) {
-    recommendations.push({ type: "error", title: "H1 Heading", description: "No H1 heading was detected. Add one clear primary H1 that describes the page's main topic." });
+    recommendations.push({ type: "error", title: "H1 Heading", description: "No H1 heading was detected. Add one clear primary H1 that describes the page's main topic.", recommendedH1 });
   } else if (h1Count === 1) {
     recommendations.push({ type: "success", title: "H1 Heading", description: "One H1 heading was detected." });
   } else {
@@ -974,6 +976,24 @@ function buildRecommendedTitle(context: ContentContext): string {
   return trimTitleToLength(closest || `${brand} | Latest Updates`, 60);
 }
 
+function buildRecommendedH1(context: ContentContext): string {
+  const brand = cleanBrandName(context.brand);
+  const topic = cleanTopic(context.topic, brand);
+
+  if (topic && brand) {
+    return `${topic} - Latest Updates & Information`;
+  }
+
+  if (topic) {
+    return `${topic} - Latest Updates & Information`;
+  }
+
+  if (brand) {
+    return `${brand} - Latest Updates & Information`;
+  }
+
+  return "Latest Updates & Information";
+}
 function buildRecommendedMetaDescription(context: ContentContext): string {
   const brand = cleanBrandName(context.brand);
   const topic = cleanTopic(context.topic, brand);
