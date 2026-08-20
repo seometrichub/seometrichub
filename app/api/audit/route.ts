@@ -1001,9 +1001,24 @@ function buildRecommendedTitle(context: ContentContext): string {
 function buildRecommendedH1(context: ContentContext): string {
   const brand = cleanBrandName(context.brand);
   const topic = cleanTopic(context.topic, brand);
+  const lowerTopic = topic.toLowerCase();
+  const signals = context.signals
+    .map(cleanHtmlText)
+    .map(cleanSuggestionPhrase)
+    .filter(Boolean);
 
-  if (topic && brand) {
-    return `${topic} - Latest Updates & Information`;
+  const signalText = signals.join(" ").toLowerCase();
+
+  if (
+    lowerTopic.includes("job") ||
+    lowerTopic.includes("recruitment") ||
+    lowerTopic.includes("employment") ||
+    signalText.includes("government jobs") ||
+    signalText.includes("private jobs") ||
+    signalText.includes("job notifications") ||
+    signalText.includes("exam notifications")
+  ) {
+    return "Latest Government & Private Job Notifications";
   }
 
   if (topic) {
