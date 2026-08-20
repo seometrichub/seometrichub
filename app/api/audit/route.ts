@@ -684,20 +684,42 @@ function getImageSource(image: string): string {
 
 function getRecommendedAlt(src: string, baseUrl: string): string {
   if (!src) return "Descriptive image alt text";
+
   try {
     const parsed = new URL(src, baseUrl);
     const filename =
-      parsed.pathname.split("/").filter(Boolean).pop()?.replace(/\.[^/.]+$/, "") || "";
+      parsed.pathname
+        .split("/")
+        .filter(Boolean)
+        .pop()
+        ?.replace(/\.[^/.]+$/, "") || "";
+
     const cleaned = decodeURIComponent(filename)
+      .replace(/\b(cropped?|image|img|photo|picture|pic|logo)\b/gi, " ")
       .replace(/[-_]+/g, " ")
-      .replace(/\d{2,}/g, "")
+      .replace(/\d{2,}/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-    if (!cleaned) return "Descriptive image alt text";
-    return cleaned
+
+    if (!cleaned) {
+      return "Descriptive image alt text";
+    }
+
+    const words = cleaned
       .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
+      .filter(Boolean)
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+      );
+
+    const uniqueWords = words.filter(
+      (word, index) =>
+        index === 0 ||
+        word.toLowerCase() !== words[index - 1].toLowerCase(),
+    );
+
+    return uniqueWords.join(" ") || "Descriptive image alt text";
   } catch {
     return "Descriptive image alt text";
   }
