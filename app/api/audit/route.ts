@@ -332,13 +332,13 @@ export async function POST(request: Request) {
     seoOpportunitiesScore = clampScore(seoOpportunitiesScore);
 
     const overallScore = Math.round(
-      technicalSeoScore * 0.2 +
+      technicalSeoScore * 0.15 +
         pagePerformanceScore * 0.15 +
-        metaScore * 0.2 +
-        mobileScore * 0.1 +
-        contentScore * 0.2 +
+        metaScore * 0.20 +
+        mobileScore * 0.10 +
+        contentScore * 0.20 +
         imageScore * 0.05 +
-        seoOpportunitiesScore * 0.1,
+        seoOpportunitiesScore * 0.15,
     );
 
     const backlinkData: BacklinkData = {
