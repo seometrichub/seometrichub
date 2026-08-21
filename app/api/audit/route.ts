@@ -281,7 +281,8 @@ export async function POST(request: Request) {
     else if (descriptionQuality === "tooShort" || descriptionQuality === "tooLong") metaScore += 20;
     metaScore = clampScore(metaScore);
 
-    let contentScore = 0;
+        let contentScore = 0;
+
     if (h1Count === 1) contentScore += 30;
     else if (h1Count > 1) contentScore += 15;
 
@@ -289,14 +290,12 @@ export async function POST(request: Request) {
     else if (h2Count > 20) contentScore += 10;
     else if (h2Count === 1) contentScore += 10;
 
-    if (titleLength >= 30 && titleLength <= 60) contentScore += 15;
-    else if (titleLength > 0) contentScore += 8;
-
-    if (wordCount >= 1500) contentScore += 35;
-    else if (wordCount >= 1000) contentScore += 30;
-    else if (wordCount >= 700) contentScore += 25;
+    if (wordCount >= 1500) contentScore += 50;
+    else if (wordCount >= 1000) contentScore += 40;
+    else if (wordCount >= 700) contentScore += 30;
     else if (wordCount >= 500) contentScore += 20;
     else if (wordCount >= 300) contentScore += 10;
+
     contentScore = clampScore(contentScore);
 
     const imageScore =
