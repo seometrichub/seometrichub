@@ -316,11 +316,24 @@ export async function POST(request: Request) {
 
    let seoOpportunitiesScore = 100;
 
-if (!hasCanonical) seoOpportunitiesScore -= 15;
-if (!robotsTxt) seoOpportunitiesScore -= 15;
-if (!sitemap) seoOpportunitiesScore -= 15;
-if (internalLinks === 0) seoOpportunitiesScore -= 15;
-if (!favicon) seoOpportunitiesScore -= 10;
+if (!hasH1) seoOpportunitiesScore -= 25;
+else if (h1Count > 1) seoOpportunitiesScore -= 10;
+
+if (!hasTitle) seoOpportunitiesScore -= 15;
+else if (titleLength < 30 || titleLength > 60) seoOpportunitiesScore -= 5;
+
+if (!hasDescription) seoOpportunitiesScore -= 15;
+else if (descriptionLength < 70 || descriptionLength > 160) {
+  seoOpportunitiesScore -= 5;
+}
+
+if (imagesWithoutAlt > 0) seoOpportunitiesScore -= 15;
+
+if (!hasCanonical) seoOpportunitiesScore -= 10;
+if (!robotsTxt) seoOpportunitiesScore -= 10;
+if (!sitemap) seoOpportunitiesScore -= 10;
+if (internalLinks === 0) seoOpportunitiesScore -= 10;
+if (!favicon) seoOpportunitiesScore -= 5;
 
 seoOpportunitiesScore = clampScore(seoOpportunitiesScore);
 
