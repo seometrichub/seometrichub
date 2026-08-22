@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -264,6 +264,7 @@ const loadSearchConsole = async (siteUrl: string) => {
      
 setUrl(websiteUrl);
 setAudit(data as AuditResult);
+loadSearchConsole(websiteUrl);
 
 
     } catch (err) {
