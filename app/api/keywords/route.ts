@@ -337,7 +337,7 @@ async function fetchGoogleSuggestions(
 }
 async function fetchDataForSeoOverview(
   keywords: string[],
-  locationCode: number,
+  locationName: string,
   languageCode: string,
 ): Promise<Map<string, DataForSeoKeywordMetrics>> {
   const credentials = getDataForSeoCredentials();
@@ -348,7 +348,7 @@ async function fetchDataForSeoOverview(
 
   try {
     const response = await fetch(
-      "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/task_post",
+      "https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_overview/live",
       {
         method: "POST",
         headers: {
@@ -358,7 +358,7 @@ async function fetchDataForSeoOverview(
         body: JSON.stringify([
           {
             keywords,
-            location_code: locationCode,
+            location_name: locationName,
             language_code: languageCode,
           },
         ]),
@@ -412,7 +412,7 @@ async function fetchDataForSeoOverview(
 }
 async function fetchDataForSeoDifficulty(
   keywords: string[],
-  locationCode: number,
+  locationName: string,
   languageCode: string,
 ): Promise<Map<string, number | null>> {
   const credentials = getDataForSeoCredentials();
@@ -433,7 +433,7 @@ async function fetchDataForSeoDifficulty(
         body: JSON.stringify([
           {
             keywords,
-            location_code: locationCode,
+            location_name: locationName,
             language_code: languageCode,
           },
         ]),
@@ -645,10 +645,51 @@ export async function POST(request: Request) {
       languageCode,
     );
 
-    const keywords = buildKeywordResults(
+    let keywords = buildKeywordResults(
       keyword,
       suggestions,
     );
+
+    const metricKeywords = keywords
+      .map((item) => item.keyword)
+      .slice(0, 100);
+
+    const [overviewMetrics, difficultyMetrics] =
+      await Promise.all([
+        fetchDataForSeoOverview(
+          metricKeywords,
+          location,
+          languageCode,
+        ),
+        fetchDataForSeoDifficulty(
+          metricKeywords,
+          location,
+          languageCode,
+        ),
+      ]);
+
+    keywords = keywords.map((item) => {
+      const overview = overviewMetrics.get(item.keyword);
+      const difficulty = difficultyMetrics.get(item.keyword);
+
+      return {
+        ...item,
+        searchVolume: overview?.searchVolume ?? item.searchVolume,
+        keywordDifficulty:
+          difficulty ??
+          overview?.keywordDifficulty ??
+          item.keywordDifficulty,
+        cpc: overview?.cpc ?? item.cpc,
+        competition: overview?.competition ?? item.competition,
+        competitionLevel:
+          overview?.competitionLevel ?? item.competitionLevel,
+        intent: overview?.intent ?? item.intent,
+      };
+    });
+
+    const metricsAvailable =
+      overviewMetrics.size > 0 ||
+      difficultyMetrics.size > 0;
 
     const relatedKeywords = keywords
       .filter((item) => !item.isLongTail)
@@ -660,7 +701,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       provider: "free-keyword-discovery",
-      metricsAvailable: false,
+      metricsAvailable,
 
       seedKeyword: keyword,
       location,
@@ -691,6 +732,9 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
+
 
 
 
