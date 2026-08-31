@@ -46,8 +46,8 @@
     description:
       "Generate engaging social media posts, captions and campaign ideas for your business.",
     link: "Create Social Posts",
-    href: "#",
-    available: false,
+    href: "/social-generator",
+    available: true,
   },
   {
     number: "06",
@@ -251,6 +251,8 @@ export default function Features() {
     </section>
   );
 }
+
+
 
 
 
