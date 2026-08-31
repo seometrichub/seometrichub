@@ -56,8 +56,8 @@
     description:
       "Analyze competitors, discover their keywords, content strategies and growth opportunities.",
     link: "Analyze Competitors",
-    href: "#",
-    available: false,
+    href: "/competitor-analysis",
+    available: true,
   },
 ];
 export default function Features() {
@@ -251,6 +251,7 @@ export default function Features() {
     </section>
   );
 }
+
 
 
 
