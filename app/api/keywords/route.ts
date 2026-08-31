@@ -82,7 +82,7 @@ function isLongTailKeyword(keyword: string): boolean {
     return true;
   }
 
-  return wordCount >= 5;
+  return wordCount >= 3;
 }
 function isUsefulKeyword(keyword: string): boolean {
   if (!keyword) return false;
@@ -692,7 +692,10 @@ export async function POST(request: Request) {
       difficultyMetrics.size > 0;
 
     const relatedKeywords = keywords
-      .filter((item) => !item.isLongTail)
+      .filter(
+        (item) =>
+          item.keyword !== cleanKeyword(keyword),
+      )
       .slice(0, 50);
 
     const longTailKeywords = keywords
@@ -732,6 +735,8 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
 
 
 
