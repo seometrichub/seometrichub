@@ -23,6 +23,7 @@ type SuggestionResponse = {
 function cleanKeyword(value: string): string {
   return value
     .toLowerCase()
+    .replace(/\brealestate\b/g, "real estate")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -31,38 +32,89 @@ function getIntent(keyword: string): string {
   const value = keyword.toLowerCase();
 
   if (
-    /\b(buy|price|pricing|cost|cheap|best|service|agency|company|tool|software|course)\b/.test(
+    /\b(buy|order|hire|book|purchase|subscribe|for sale|near me)\b/.test(
+      value,
+    )
+  ) {
+    return "Transactional";
+  }
+
+  if (
+    /\b(login|sign in|signin|official|website|download|portal)\b/.test(
+      value,
+    )
+  ) {
+    return "Navigational";
+  }
+
+  if (
+    /\b(price|pricing|cost|cheap|best|service|agency|company|tool|software|course|consultant|expert|package|packages)\b/.test(
       value,
     )
   ) {
     return "Commercial";
   }
 
-  if (
-    /\b(buy|order|hire|book|purchase|near me|for sale)\b/.test(value)
-  ) {
-    return "Transactional";
-  }
-
-  if (
-    /\b(login|sign in|signin|official|website|download)\b/.test(value)
-  ) {
-    return "Navigational";
-  }
-
   return "Informational";
 }
 
 function isLongTailKeyword(keyword: string): boolean {
-  return keyword.split(/\s+/).length >= 4;
-}
+  const wordCount = keyword.split(/\s+/).filter(Boolean).length;
 
+  const longTailPatterns = [
+    /\bnear me\b/i,
+    /\bfor sale\b/i,
+    /\bfor rent\b/i,
+    /\bfor beginners\b/i,
+    /\bfor business\b/i,
+    /\bfor freshers\b/i,
+    /\bhow\b/i,
+    /\bwhy\b/i,
+    /\bwhen\b/i,
+    /\bwhere\b/i,
+    /\btop \d+\b/i,
+    /\bbest\b/i,
+    /\bupcoming\b/i,
+    /\bnew\b/i,
+  ];
+
+  if (longTailPatterns.some((pattern) => pattern.test(keyword))) {
+    return true;
+  }
+
+  return wordCount >= 5;
+}
 function isUsefulKeyword(keyword: string): boolean {
   if (!keyword) return false;
   if (keyword.length < 2) return false;
   if (keyword.length > 100) return false;
 
-  return true;
+  const words = keyword.split(/\s+/).filter(Boolean);
+
+  if (words.length === 0 || words.length > 12) {
+    return false;
+  }
+
+  // Reject obvious person-name style suggestions.
+  const nameLikePatterns = [
+    /\b(bo-ram|bum-june|eun-soo|ji-hoon|ji-hye|hyun-jin|su-min|hye-won)\b/i,
+    /\b(taeji|taiji|nari|rina|jun|joon|hyun|eve|dan|guk|ha)\b/i,
+  ];
+
+ if (nameLikePatterns.some((pattern) => pattern.test(keyword))) {
+  return false;
+}
+
+const unwantedBrandPatterns = [
+  /\bask properties\b/i,
+  /\bsubhagruha\b/i,
+];
+
+if (unwantedBrandPatterns.some((pattern) => pattern.test(keyword))) {
+  return false;
+}
+
+return true;
 }
 
 function buildKeywordResults(
@@ -78,27 +130,95 @@ function buildKeywordResults(
         .filter(isUsefulKeyword),
     ),
   );
+    const seedWords = seed.split(/\s+/).filter(Boolean);
 
-  const seedWords = seed.split(/\s+/).filter(Boolean);
+    const suspiciousWords = new Set([
+      "seonghyeon",
+      "seoul",
+      "seoulskin",
+      "seozoom",
+      "seoquake",
+      "quartz",
+      "zaragoza",
+      "znacenje",
+      "znaczenie",
+      "zilla",
+      "zac",
+      "bo-ram",
+      "bum-june",
+      "eun-soo",
+      "ji-hoon",
+      "ji-hye",
+      "hyun",
+      "hyun-jin",
+      "rina",
+      "nari",
+      "taiji",
+      "taeji",
+      "khazana",
+      "yoon-jeong",
+      "young-hee",
+      "dal-mi",
+      "london",
+      "zurich",
+      "shopee",
+      "udemy",
+      "upwork",
+      "github",
+    ]);
 
-  const relevant = unique.filter((keyword) => {
-    if (keyword === seed) return true;
+    const relevant = unique.filter((keyword) => {
+      if (keyword === seed) {
+        return true;
+      }
 
-    const keywordWords = keyword.split(/\s+/);
+      const keywordWords = keyword.split(/\s+/);
 
-    const matchedWords = seedWords.filter((word) =>
-      keyword.includes(word),
-    ).length;
+      // Every seed word must appear in the suggestion.
+      const normalizedKeyword = keyword
+  .replace(/\brealestate\b/g, "real estate")
+  .replace(/\breal estate\b/g, "realestate");
 
-    return (
-      matchedWords >= Math.max(1, Math.ceil(seedWords.length * 0.5))
-    );
-  });
+const normalizedKeywordWords = normalizedKeyword
+  .split(/\s+/)
+  .filter(Boolean);
 
-  const ranked = relevant
+const containsSeed = seedWords.every((seedWord) =>
+  normalizedKeywordWords.some(
+    (keywordWord) =>
+      keywordWord === seedWord ||
+      keywordWord.includes(seedWord) ||
+      seedWord.includes(keywordWord),
+  ),
+);
+
+if (!containsSeed) {
+  return false;
+}
+
+      // Reject known irrelevant/proper-name suggestions.
+      if (
+        seedWords.length === 1 &&
+        keywordWords.some((word) => suspiciousWords.has(word))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    const ranked = relevant
     .sort((a, b) => {
       if (a === seed) return -1;
       if (b === seed) return 1;
+
+      const aLongTail = isLongTailKeyword(a);
+      const bLongTail = isLongTailKeyword(b);
+
+      // Keep shorter related keywords first.
+      if (aLongTail !== bLongTail) {
+        return aLongTail ? 1 : -1;
+      }
 
       const aWords = a.split(/\s+/).length;
       const bWords = b.split(/\s+/).length;
@@ -124,7 +244,60 @@ function buildKeywordResults(
     isLongTail: isLongTailKeyword(keyword),
   }));
 }
+type DataForSeoKeywordMetrics = {
+  searchVolume: number | null;
+  keywordDifficulty: number | null;
+  cpc: number | null;
+  competition: number | null;
+  competitionLevel: string | null;
+  intent: string | null;
+};
+type DataForSeoOverviewResponse = {
+  tasks?: Array<{
+    status_code?: number;
+    status_message?: string;
+    result?: Array<{
+      items?: Array<{
+        keyword?: string;
+        keyword_info?: {
+          search_volume?: number | null;
+          cpc?: number | null;
+          competition?: number | null;
+          competition_level?: string | null;
+        };
+        search_intent_info?: {
+          main_intent?: string | null;
+        };
+      }>;
+    }>;
+  }>;
+};
+type DataForSeoDifficultyResponse = {
+  tasks?: Array<{
+    status_code?: number;
+    status_message?: string;
+    result?: Array<{
+      items?: Array<{
+        keyword?: string;
+        keyword_difficulty?: number | null;
+      }>;
+    }>;
+  }>;
+};
+function getDataForSeoCredentials() {
+  const login = process.env.DATAFORSEO_LOGIN;
+  const password = process.env.DATAFORSEO_PASSWORD;
 
+  if (!login || !password) {
+    return null;
+  }
+
+  return {
+    login,
+    password,
+    auth: Buffer.from(`${login}:${password}`).toString("base64"),
+  };
+}
 async function fetchGoogleSuggestions(
   query: string,
   languageCode: string,
@@ -162,46 +335,266 @@ async function fetchGoogleSuggestions(
     return [];
   }
 }
+async function fetchDataForSeoOverview(
+  keywords: string[],
+  locationCode: number,
+  languageCode: string,
+): Promise<Map<string, DataForSeoKeywordMetrics>> {
+  const credentials = getDataForSeoCredentials();
 
+  if (!credentials || keywords.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const response = await fetch(
+      "https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/task_post",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${credentials.auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          {
+            keywords,
+            location_code: locationCode,
+            language_code: languageCode,
+          },
+        ]),
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      console.error(
+        "DataForSEO overview request failed:",
+        response.status,
+      );
+      return new Map();
+    }
+
+    const data =
+      (await response.json()) as DataForSeoOverviewResponse;
+
+    const result = new Map<string, DataForSeoKeywordMetrics>();
+
+    for (const task of data.tasks ?? []) {
+      for (const resultBlock of task.result ?? []) {
+        for (const item of resultBlock.items ?? []) {
+          const keyword = cleanKeyword(item.keyword ?? "");
+
+          if (!keyword) {
+            continue;
+          }
+
+          result.set(keyword, {
+            searchVolume:
+              item.keyword_info?.search_volume ?? null,
+            keywordDifficulty: null,
+            cpc: item.keyword_info?.cpc ?? null,
+            competition:
+              item.keyword_info?.competition ?? null,
+            competitionLevel:
+              item.keyword_info?.competition_level ?? null,
+            intent:
+              item.search_intent_info?.main_intent ?? null,
+          });
+        }
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error("DataForSEO overview error:", error);
+    return new Map();
+  }
+}
+async function fetchDataForSeoDifficulty(
+  keywords: string[],
+  locationCode: number,
+  languageCode: string,
+): Promise<Map<string, number | null>> {
+  const credentials = getDataForSeoCredentials();
+
+  if (!credentials || keywords.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const response = await fetch(
+      "https://api.dataforseo.com/v3/dataforseo_labs/google/bulk_keyword_difficulty/live",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${credentials.auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          {
+            keywords,
+            location_code: locationCode,
+            language_code: languageCode,
+          },
+        ]),
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      console.error(
+        "DataForSEO difficulty request failed:",
+        response.status,
+      );
+      return new Map();
+    }
+
+    const data =
+      (await response.json()) as DataForSeoDifficultyResponse;
+
+    const result = new Map<string, number | null>();
+
+    for (const task of data.tasks ?? []) {
+      for (const resultBlock of task.result ?? []) {
+        for (const item of resultBlock.items ?? []) {
+          const keyword = cleanKeyword(item.keyword ?? "");
+
+          if (!keyword) {
+            continue;
+          }
+
+          result.set(
+            keyword,
+            item.keyword_difficulty ?? null,
+          );
+        }
+      }
+    }
+
+    return result;
+  } catch (error) {
+    console.error("DataForSEO difficulty error:", error);
+    return new Map();
+  }
+}
+function extractLocationFromKeyword(keyword: string): string | null {
+  const normalized = cleanKeyword(keyword);
+
+  const match = normalized.match(
+    /\b(?:in|near|at)\s+([a-z][a-z\s-]{1,40})$/i,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return match[1]
+    .replace(/\s+/g, " ")
+    .trim();
+}
 async function collectSuggestions(
   seedKeyword: string,
   languageCode: string,
 ): Promise<string[]> {
+  const location = extractLocationFromKeyword(seedKeyword);
+const baseKeyword = cleanKeyword(seedKeyword);
+  const seed = cleanKeyword(seedKeyword);
+
   const queries = [
-    seedKeyword,
-    `${seedKeyword} a`,
-    `${seedKeyword} b`,
-    `${seedKeyword} c`,
-    `${seedKeyword} d`,
-    `${seedKeyword} e`,
-    `${seedKeyword} f`,
-    `${seedKeyword} g`,
-    `${seedKeyword} h`,
-    `${seedKeyword} i`,
-    `${seedKeyword} j`,
-    `${seedKeyword} k`,
-    `${seedKeyword} l`,
-    `${seedKeyword} m`,
-    `${seedKeyword} n`,
-    `${seedKeyword} o`,
-    `${seedKeyword} p`,
-    `${seedKeyword} q`,
-    `${seedKeyword} r`,
-    `${seedKeyword} s`,
-    `${seedKeyword} t`,
-    `${seedKeyword} u`,
-    `${seedKeyword} v`,
-    `${seedKeyword} w`,
-    `${seedKeyword} x`,
-    `${seedKeyword} y`,
-    `${seedKeyword} z`,
+    seed,
+    ...(location
+      ? [
+          `${baseKeyword} ${location}`,
+          `${baseKeyword} near ${location}`,
+          `${baseKeyword} in ${location}`,
+          `${location} ${baseKeyword}`,
+          `${baseKeyword} for sale in ${location}`,
+          `${baseKeyword} for rent in ${location}`,
+          `${baseKeyword} companies in ${location}`,
+          `${baseKeyword} agents in ${location}`,
+          `${baseKeyword} projects in ${location}`,
+        ]
+      : []),
+    `${seed} near me`,
+    `${seed} near`,
+    `${seed} best`,
+    `${seed} services`,
+    `${seed} agency`,
+    `${seed} company`,
+    `${seed} companies`,
+    `${seed} agents`,
+    `${seed} properties`,
+    `${seed} property`,
+    `${seed} projects`,
+    `${seed} builders`,
+    `${seed} developers`,
+    `${seed} for sale`,
+    `${seed} for rent`,
+    `${seed} price`,
+    `${seed} cost`,
+    `${seed} guide`,
+    `${seed} tips`,
+    `${seed} jobs`,
+    `${seed} jobs for freshers`,
+
+    `${seed} a`,
+    `${seed} b`,
+    `${seed} c`,
+    `${seed} d`,
+    `${seed} e`,
+    `${seed} f`,
+    `${seed} g`,
+    `${seed} h`,
+    `${seed} i`,
+    `${seed} j`,
+    `${seed} k`,
+    `${seed} l`,
+    `${seed} m`,
+    `${seed} n`,
+    `${seed} o`,
+    `${seed} p`,
+    `${seed} q`,
+    `${seed} r`,
+    `${seed} s`,
+    `${seed} t`,
+    `${seed} u`,
+    `${seed} v`,
+    `${seed} w`,
+    `${seed} x`,
+    `${seed} y`,
+    `${seed} z`,
   ];
 
   const results = await Promise.all(
-    queries.map((query) => fetchGoogleSuggestions(query, languageCode)),
+    queries.map((query) =>
+      fetchGoogleSuggestions(query, languageCode),
+    ),
   );
 
-  return results.flat();
+  const googleSuggestions = results.flat();
+
+  const fallbackSuggestions = [
+    `${seed} services`,
+    `${seed} company`,
+    `${seed} companies`,
+    `${seed} agency`,
+    `${seed} agents`,
+    `${seed} properties`,
+    `${seed} property`,
+    `${seed} projects`,
+    `${seed} builders`,
+    `${seed} developers`,
+    `${seed} for sale`,
+    `${seed} for rent`,
+    `${seed} price`,
+    `${seed} cost`,
+    `${seed} near me`,
+  ];
+
+  return [
+    ...googleSuggestions,
+    ...fallbackSuggestions,
+  ];
 }
 
 export async function POST(request: Request) {
@@ -298,3 +691,13 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+

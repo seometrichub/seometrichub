@@ -6,6 +6,8 @@ const features = [
     description:
       "Analyze your website and discover technical SEO, performance and optimization problems.",
     link: "Analyze Website",
+    href: "/audit",
+    available: true,
   },
   {
     number: "02",
@@ -14,6 +16,8 @@ const features = [
     description:
       "Discover high-value keywords, search volume, competition and ranking opportunities.",
     link: "Find Keywords",
+    href: "/keywords",
+    available: true,
   },
   {
     number: "03",
@@ -22,6 +26,8 @@ const features = [
     description:
       "Monitor backlinks, discover link opportunities and understand your website authority.",
     link: "Analyze Backlinks",
+    href: "#",
+    available: false,
   },
   {
     number: "04",
@@ -30,14 +36,18 @@ const features = [
     description:
       "Create SEO-friendly articles, website content, social posts and marketing copy using AI.",
     link: "Create Content",
+    href: "#",
+    available: false,
   },
   {
     number: "05",
-    icon: "◎",
+    icon: "◉",
     title: "Social Media Generator",
     description:
       "Generate engaging social media posts, captions and campaign ideas for your business.",
     link: "Create Social Posts",
+    href: "#",
+    available: false,
   },
   {
     number: "06",
@@ -46,9 +56,10 @@ const features = [
     description:
       "Analyze competitors, discover their keywords, content strategies and growth opportunities.",
     link: "Analyze Competitors",
+    href: "#",
+    available: false,
   },
 ];
-
 export default function Features() {
   return (
     <section
@@ -153,26 +164,37 @@ export default function Features() {
               </p>
 
               {/* Link */}
-              <button
-                type="button"
-                className="
-                  mt-7
-                  inline-flex
-                  items-center
-                  gap-2
-                  text-sm
-                  font-black
-                  text-[#F97316]
-                  transition-all
-                  group-hover:gap-3
-                  hover:text-[#EA580C]
-                "
-              >
-                {feature.link}
-                <span>
-                  →
-                </span>
-              </button>
+            
+<a
+  href={feature.available ? feature.href : "#"}
+  className={`
+    mt-7
+    inline-flex
+    items-center
+    gap-2
+    text-sm
+    font-black
+    transition-all
+    group-hover:gap-3
+    ${
+      feature.available
+        ? "text-[#F97316] hover:text-[#EA580C]"
+        : "cursor-not-allowed text-slate-400"
+    }
+  `}
+>
+  {feature.link}
+
+  <span>
+    →
+  </span>
+
+  {!feature.available && (
+    <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+      Soon
+    </span>
+  )}
+</a>
 
               {/* Bottom accent */}
               <div className="absolute bottom-0 left-0 h-1 w-0 bg-[#F97316] transition-all duration-300 group-hover:w-full" />
