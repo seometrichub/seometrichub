@@ -36,8 +36,8 @@
     description:
       "Create SEO-friendly articles, website content, social posts and marketing copy using AI.",
     link: "Create Content",
-    href: "#",
-    available: false,
+    href: "/content-generator",
+    available: true,
   },
   {
     number: "05",
@@ -251,4 +251,6 @@ export default function Features() {
     </section>
   );
 }
+
+
 
