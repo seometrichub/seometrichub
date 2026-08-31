@@ -1,7 +1,7 @@
-const features = [
+﻿const features = [
   {
     number: "01",
-    icon: "⌕",
+    icon: "âŒ•",
     title: "Website SEO Audit",
     description:
       "Analyze your website and discover technical SEO, performance and optimization problems.",
@@ -11,7 +11,7 @@ const features = [
   },
   {
     number: "02",
-    icon: "⌕",
+    icon: "âŒ•",
     title: "Keyword Research",
     description:
       "Discover high-value keywords, search volume, competition and ranking opportunities.",
@@ -21,17 +21,17 @@ const features = [
   },
   {
     number: "03",
-    icon: "↗",
+    icon: "â†—",
     title: "Backlink Analysis",
     description:
       "Monitor backlinks, discover link opportunities and understand your website authority.",
     link: "Analyze Backlinks",
-    href: "#",
-    available: false,
+    href: "/backlinks",
+      available: true,
   },
   {
     number: "04",
-    icon: "✦",
+    icon: "âœ¦",
     title: "AI Content Generator",
     description:
       "Create SEO-friendly articles, website content, social posts and marketing copy using AI.",
@@ -41,7 +41,7 @@ const features = [
   },
   {
     number: "05",
-    icon: "◉",
+    icon: "â—‰",
     title: "Social Media Generator",
     description:
       "Generate engaging social media posts, captions and campaign ideas for your business.",
@@ -51,7 +51,7 @@ const features = [
   },
   {
     number: "06",
-    icon: "♛",
+    icon: "â™›",
     title: "Competitor Analysis",
     description:
       "Analyze competitors, discover their keywords, content strategies and growth opportunities.",
@@ -186,7 +186,7 @@ export default function Features() {
   {feature.link}
 
   <span>
-    →
+    â†’
   </span>
 
   {!feature.available && (
@@ -241,7 +241,7 @@ export default function Features() {
           >
             Start Free Audit
             <span className="text-[#F97316]">
-              →
+              â†’
             </span>
           </a>
 
@@ -251,3 +251,4 @@ export default function Features() {
     </section>
   );
 }
+
