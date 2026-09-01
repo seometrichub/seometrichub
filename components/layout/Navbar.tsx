@@ -125,7 +125,7 @@ export default function Navbar() {
             "
           >
             Get Started
-            <span>→</span>
+            <span>-&gt;</span>
           </a>
 
         </div>
@@ -153,11 +153,11 @@ export default function Navbar() {
         >
           {menuOpen ? (
             <span className="text-2xl leading-none">
-              ×
+              X
             </span>
           ) : (
             <span className="text-xl leading-none">
-              ☰
+              Menu
             </span>
           )}
         </button>
@@ -237,7 +237,7 @@ export default function Navbar() {
                 "
               >
                 Get Started
-                <span>→</span>
+            <span>-&gt;</span>
               </a>
 
             </div>
