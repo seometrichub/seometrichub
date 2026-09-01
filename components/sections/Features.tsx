@@ -147,7 +147,7 @@ export default function Features() {
               </p>
 
               <a
-                href={feature.available ? feature.href : "#"}
+                href={feature.href}
                 className={`
                   mt-7
                   inline-flex
@@ -165,7 +165,10 @@ export default function Features() {
                 `}
               >
                 {feature.link}
-                <span aria-hidden="true">-&gt;</span>
+
+                <span aria-hidden="true">
+                  -&gt;
+                </span>
 
                 {!feature.available && (
                   <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-400">
@@ -211,7 +214,11 @@ export default function Features() {
             "
           >
             Start Free Audit
-            <span className="text-[#F97316]" aria-hidden="true">
+
+            <span
+              className="text-[#F97316]"
+              aria-hidden="true"
+            >
               -&gt;
             </span>
           </a>
