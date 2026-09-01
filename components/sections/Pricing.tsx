@@ -1,47 +1,48 @@
 const plans = [
   {
-    name: "Starter",
-    description: "For small businesses getting started with SEO.",
-    price: "₹999",
-    popular: false,
+    name: "SEO Essentials",
+    description:
+      "Use the core SEO analysis tools currently available on SEOMETRICHUB.",
+    status: "Available Now",
     features: [
       "Website SEO Audit",
       "Keyword Research",
-      "Basic SEO Reports",
-      "Website Monitoring",
-      "Monthly SEO Insights",
-    ],
-    button: "Get Started",
-  },
-  {
-    name: "Growth",
-    description: "For businesses ready to accelerate online growth.",
-    price: "₹2,499",
-    popular: true,
-    features: [
-      "Everything in Starter",
+      "Backlink & Link Analysis",
       "Competitor Analysis",
-      "AI Content Tools",
-      "Social Media Generator",
-      "Advanced SEO Reports",
-      "Growth Recommendations",
     ],
-    button: "Start Growing",
+    button: "Explore SEO Tools",
+    href: "#tools",
+    popular: false,
   },
   {
-    name: "Business",
-    description: "For growing teams that need advanced SEO.",
-    price: "₹4,999",
-    popular: false,
+    name: "AI Marketing Tools",
+    description:
+      "Create useful marketing content with the AI tools available on the platform.",
+    status: "Available Now",
     features: [
-      "Everything in Growth",
-      "Advanced SEO Strategy",
-      "Priority Support",
-      "Custom SEO Strategy",
-      "Detailed Competitor Research",
-      "Priority AI Insights",
+      "AI Content Generator",
+      "Social Media Generator",
+      "SEO-Focused Content Assistance",
+      "Marketing Content Ideas",
     ],
-    button: "Contact Us",
+    button: "Explore AI Tools",
+    href: "#tools",
+    popular: true,
+  },
+  {
+    name: "Premium Plans",
+    description:
+      "Advanced plans and additional platform features are being prepared.",
+    status: "Coming Soon",
+    features: [
+      "More Advanced SEO Workflows",
+      "Expanded Reporting",
+      "Additional Business Tools",
+      "More Platform Integrations",
+    ],
+    button: "Explore Current Tools",
+    href: "#tools",
+    popular: false,
   },
 ];
 
@@ -63,25 +64,25 @@ export default function Pricing() {
 
           <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-[#F97316]">
             <span className="h-2 w-2 rounded-full bg-[#F97316]" />
-            Simple Pricing
+            Simple Access
           </span>
 
           <h2 className="mt-6 text-4xl font-black tracking-tight text-[#0F172A] sm:text-5xl lg:text-6xl">
-            Plans That{" "}
+            Powerful Tools{" "}
             <span className="text-[#F97316]">
-              Grow With You
+              Built for Growth
             </span>
           </h2>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[#64748B]">
-            Choose a plan that fits your business needs and start building
-            a stronger online presence today.
+            Explore the SEO and AI marketing tools currently available.
+            Premium plans and additional capabilities are coming soon.
           </p>
 
         </div>
 
         {/* =========================
-            PRICING CARDS
+            CARDS
         ========================== */}
         <div className="mx-auto mt-16 grid max-w-6xl gap-6 lg:grid-cols-3">
 
@@ -95,50 +96,52 @@ export default function Pricing() {
               }`}
             >
 
-              {/* Popular Badge */}
+              {/* Featured Badge */}
               {plan.popular && (
                 <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#F97316] px-4 py-1.5 text-xs font-black tracking-wide text-white shadow-lg shadow-orange-200">
-                  MOST POPULAR
+                  AI POWERED
                 </div>
               )}
 
-              {/* Plan Header */}
+              {/* Card Header */}
               <div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-3">
 
                   <h3 className="text-xl font-black text-[#0F172A]">
                     {plan.name}
                   </h3>
 
-                  {plan.popular && (
-                    <span className="rounded-lg bg-orange-50 px-2.5 py-1 text-xs font-bold text-[#F97316]">
-                      Best Value
-                    </span>
-                  )}
+                  <span
+                    className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-bold ${
+                      plan.status === "Coming Soon"
+                        ? "bg-slate-100 text-slate-600"
+                        : "bg-green-50 text-green-600"
+                    }`}
+                  >
+                    {plan.status}
+                  </span>
 
                 </div>
 
-                <p className="mt-3 min-h-[48px] text-sm leading-6 text-[#64748B]">
+                <p className="mt-4 min-h-[72px] text-sm leading-6 text-[#64748B]">
                   {plan.description}
                 </p>
 
               </div>
 
-              {/* Price */}
-              <div className="mt-8 border-b border-slate-100 pb-8">
+              {/* Access */}
+              <div className="mt-7 border-b border-slate-100 pb-7">
 
-                <div className="flex items-end gap-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Access
+                </p>
 
-                  <span className="text-4xl font-black tracking-tight text-[#0F172A] sm:text-5xl">
-                    {plan.price}
-                  </span>
-
-                  <span className="mb-1 text-sm text-[#94A3B8]">
-                    /month
-                  </span>
-
-                </div>
+                <p className="mt-2 text-3xl font-black tracking-tight text-[#0F172A]">
+                  {plan.status === "Coming Soon"
+                    ? "Coming Soon"
+                    : "Explore Now"}
+                </p>
 
               </div>
 
@@ -146,7 +149,7 @@ export default function Pricing() {
               <div className="mt-8 flex-1">
 
                 <p className="text-sm font-black text-[#0F172A]">
-                  What's included
+                  What&apos;s included
                 </p>
 
                 <ul className="mt-5 space-y-4">
@@ -172,7 +175,7 @@ export default function Pricing() {
 
               {/* Button */}
               <a
-                href="#tools"
+                href={plan.href}
                 className={`mt-9 flex w-full items-center justify-center rounded-xl px-5 py-3.5 text-sm font-black transition-all ${
                   plan.popular
                     ? "bg-[#F97316] text-white hover:bg-[#EA580C] hover:shadow-lg hover:shadow-orange-200"
@@ -180,8 +183,9 @@ export default function Pricing() {
                 }`}
               >
                 {plan.button}
+
                 <span className="ml-2">
-                  →
+                  -&gt;
                 </span>
               </a>
 
@@ -194,10 +198,14 @@ export default function Pricing() {
             BOTTOM NOTE
         ========================== */}
         <div className="mx-auto mt-10 flex max-w-3xl items-center justify-center gap-2 text-center text-sm text-[#64748B]">
+
           <span className="font-bold text-[#F97316]">
             ✓
           </span>
-          No long-term contracts. Upgrade or change your plan anytime.
+
+          Current tools can be explored now. Premium plans and additional
+          features will be announced when available.
+
         </div>
 
       </div>
