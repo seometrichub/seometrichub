@@ -1,19 +1,19 @@
 const stats = [
   {
-    value: "10K+",
-    label: "Websites Analyzed",
+    value: "6",
+    label: "SEO & Marketing Tools",
   },
   {
-    value: "50K+",
-    label: "Keywords Tracked",
+    value: "Real",
+    label: "Website Analysis",
   },
   {
-    value: "5K+",
-    label: "Businesses",
+    value: "AI",
+    label: "Content Generation",
   },
   {
     value: "24/7",
-    label: "AI Insights",
+    label: "Tools Available",
   },
 ];
 
