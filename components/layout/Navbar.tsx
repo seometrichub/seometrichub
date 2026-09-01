@@ -16,16 +16,13 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
 
-        {/* =========================
-            LOGO
-        ========================== */}
+        {/* LOGO */}
         <a
           href="/"
           onClick={() => setMenuOpen(false)}
           className="group flex items-center gap-3"
           aria-label="SEOMETRICHUB Home"
         >
-          {/* Logo Mark */}
           <div
             className="
               flex h-11 w-11
@@ -44,7 +41,6 @@ export default function Navbar() {
             </span>
           </div>
 
-          {/* Logo Text */}
           <div className="text-lg font-black tracking-tight text-[#0F172A] sm:text-xl">
             SEOMETRIC
             <span className="text-[#F97316]">
@@ -53,9 +49,7 @@ export default function Navbar() {
           </div>
         </a>
 
-        {/* =========================
-            DESKTOP NAVIGATION
-        ========================== */}
+        {/* DESKTOP NAVIGATION */}
         <nav className="hidden items-center gap-8 md:flex">
           {navItems.map((item) => (
             <a
@@ -84,13 +78,10 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {/* =========================
-            DESKTOP ACTIONS
-        ========================== */}
+        {/* DESKTOP ACTIONS */}
         <div className="hidden items-center gap-3 md:flex">
-
           <a
-            href="#tools"
+            href="/audit"
             className="
               rounded-lg
               px-4 py-2.5
@@ -101,7 +92,7 @@ export default function Navbar() {
               hover:text-[#F97316]
             "
           >
-            Login
+            Start Free Audit
           </a>
 
           <a
@@ -124,26 +115,24 @@ export default function Navbar() {
               hover:shadow-orange-200
             "
           >
-            Get Started
-            <span>-&gt;</span>
+            Explore Tools
+            <span aria-hidden="true">-&gt;</span>
           </a>
-
         </div>
 
-        {/* =========================
-            MOBILE MENU BUTTON
-        ========================== */}
+        {/* MOBILE MENU BUTTON */}
         <button
           type="button"
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
           className="
-            flex h-10 w-10
+            flex h-10 min-w-10
             items-center justify-center
             rounded-lg
             border border-slate-200
             bg-white
+            px-2
             text-[#0F172A]
             transition-all
             hover:border-[#F97316]
@@ -152,26 +141,21 @@ export default function Navbar() {
           "
         >
           {menuOpen ? (
-            <span className="text-2xl leading-none">
+            <span className="text-xl font-bold leading-none">
               X
             </span>
           ) : (
-            <span className="text-xl leading-none">
+            <span className="text-xs font-bold leading-none">
               Menu
             </span>
           )}
         </button>
-
       </div>
 
-      {/* =========================
-          MOBILE NAVIGATION
-      ========================== */}
+      {/* MOBILE NAVIGATION */}
       {menuOpen && (
         <div className="border-t border-slate-200 bg-white md:hidden">
-
           <nav className="mx-auto max-w-7xl px-5 py-4 sm:px-6">
-
             <div className="flex flex-col">
 
               {navItems.map((item) => (
@@ -194,9 +178,8 @@ export default function Navbar() {
                 </a>
               ))}
 
-              {/* Mobile Login */}
               <a
-                href="#tools"
+                href="/audit"
                 onClick={() => setMenuOpen(false)}
                 className="
                   mt-4
@@ -212,10 +195,9 @@ export default function Navbar() {
                   hover:text-[#F97316]
                 "
               >
-                Login
+                Start Free Audit
               </a>
 
-              {/* Mobile CTA */}
               <a
                 href="#tools"
                 onClick={() => setMenuOpen(false)}
@@ -236,17 +218,14 @@ export default function Navbar() {
                   hover:bg-[#EA580C]
                 "
               >
-                Get Started
-            <span>-&gt;</span>
+                Explore Tools
+                <span aria-hidden="true">-&gt;</span>
               </a>
 
             </div>
-
           </nav>
-
         </div>
       )}
-
     </header>
   );
 }
