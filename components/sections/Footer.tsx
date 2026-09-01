@@ -80,12 +80,9 @@ export default function Footer() {
                 Contact
               </a>
 
-              <a
-                href="#"
-                className="block text-[#64748B] transition hover:text-[#F97316]"
-              >
+              <span className="block text-[#64748B]">
                 Privacy
-              </a>
+              </span>
 
             </div>
 
