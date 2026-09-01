@@ -951,7 +951,7 @@ loadSearchConsole(websiteUrl);
         </h3>
 
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#64748B]">
-          Optional: Connect Google Search Console (Optional) to view real Google search performance data.
+          Connect Google Search Console to view real Google search performance data.
         </p>
       </div>
 
