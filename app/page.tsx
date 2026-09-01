@@ -104,7 +104,7 @@ export default function Home() {
 
               {/* Primary */}
               <a
-                href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
+                href="/audit"
                 className="
                   inline-flex items-center justify-center gap-2
                   rounded-xl
@@ -120,7 +120,9 @@ export default function Home() {
                 "
               >
                 Start Free Audit
-                <span className="text-lg">&#8594;</span>
+                <span className="text-lg" aria-hidden="true">
+                  -&gt;
+                </span>
               </a>
 
               {/* Secondary */}
@@ -143,7 +145,8 @@ export default function Home() {
               </a>
 
             </div>
-{/* Trust Text */}
+
+            {/* Trust Text */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
 
               <span className="flex items-center gap-2">
@@ -226,7 +229,7 @@ export default function Home() {
               <div className="mt-5 space-y-3 text-sm">
 
                 <a
-href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
+                  href="#tools"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
                 >
                   SEO Tools
@@ -273,12 +276,9 @@ href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
                   Contact
                 </a>
 
-                <a
-                  href="#"
-                  className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
-                >
+                <span className="block text-[#64748B]">
                   Privacy
-                </a>
+                </span>
 
               </div>
 
@@ -294,21 +294,13 @@ href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
             </p>
 
             <div className="flex items-center gap-5 text-sm">
-
-              <a
-                href="#"
-                className="text-[#94A3B8] transition hover:text-[#F97316]"
-              >
+              <span className="text-[#94A3B8]">
                 Terms
-              </a>
+              </span>
 
-              <a
-                href="#"
-                className="text-[#94A3B8] transition hover:text-[#F97316]"
-              >
+              <span className="text-[#94A3B8]">
                 Privacy
-              </a>
-
+              </span>
             </div>
 
           </div>
@@ -320,6 +312,3 @@ href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
     </main>
   );
 }
-
-
-
