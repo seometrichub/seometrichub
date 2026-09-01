@@ -3,43 +3,43 @@ const services = [
     number: "01",
     title: "Technical SEO",
     description:
-      "Improve website structure, speed, crawlability and technical performance so search engines can understand your website better.",
-    icon: "⚙",
+      "Review important technical SEO signals such as crawlability, metadata, mobile readiness, site structure, and performance indicators.",
+    icon: "SEO",
   },
   {
     number: "02",
     title: "Local SEO",
     description:
-      "Improve your local visibility and help nearby customers discover your business when they search online.",
-    icon: "⌖",
+      "Support local search visibility with tools and guidance focused on business presence and discoverability.",
+    icon: "LOCAL",
   },
   {
     number: "03",
-    title: "Keyword Strategy",
+    title: "Keyword Research",
     description:
-      "Find valuable search opportunities and build a keyword strategy designed around your business goals.",
-    icon: "⌕",
+      "Discover relevant keyword opportunities and use available search metrics to guide content and SEO decisions.",
+    icon: "KW",
   },
   {
     number: "04",
-    title: "Content Marketing",
+    title: "AI Content",
     description:
-      "Create useful, search-friendly content that attracts the right audience and supports long-term organic growth.",
-    icon: "✦",
+      "Generate SEO-focused content ideas and drafts using AI-powered content tools available on the platform.",
+    icon: "AI",
   },
   {
     number: "05",
-    title: "Social Media Marketing",
+    title: "Social Content",
     description:
-      "Build a stronger social presence with engaging content, campaigns and strategies designed to reach more customers.",
-    icon: "◎",
+      "Create social media content ideas, captions, calls to action, and hashtags using the AI social generator.",
+    icon: "SM",
   },
   {
     number: "06",
-    title: "Competitor Research",
+    title: "Competitor Analysis",
     description:
-      "Understand your competitors, discover their strategies and identify opportunities to outperform them.",
-    icon: "♛",
+      "Compare observable on-page, content, link, and technical signals from competitor websites.",
+    icon: "CA",
   },
 ];
 
@@ -49,49 +49,32 @@ export default function Services() {
       id="services"
       className="relative overflow-hidden border-y border-slate-200 bg-slate-50 py-24 lg:py-32"
     >
-      {/* Background Decoration */}
       <div className="pointer-events-none absolute -left-40 top-20 h-80 w-80 rounded-full bg-orange-100/50 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-
-        {/* =========================
-            HEADER
-        ========================== */}
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
-
           <div>
-
             <span className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.18em] text-[#F97316]">
               <span className="h-2 w-2 rounded-full bg-[#F97316]" />
-              Our Services
+              Platform Capabilities
             </span>
 
             <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight text-[#0F172A] sm:text-5xl lg:text-6xl">
-              Digital Marketing That{" "}
-              <span className="text-[#F97316]">
-                Drives Growth
-              </span>
+              SEO & Marketing Tools for{" "}
+              <span className="text-[#F97316]">Smarter Growth</span>
             </h2>
-
           </div>
 
           <div>
-
             <p className="max-w-2xl text-lg leading-8 text-[#64748B]">
-              We combine SEO, content, social media and AI-powered marketing
-              strategies to help businesses attract customers and build a
-              stronger online presence.
+              Explore practical SEO analysis, keyword research, AI content,
+              social media, backlink, and competitor analysis tools in one
+              platform.
             </p>
-
           </div>
-
         </div>
 
-        {/* =========================
-            SERVICE GRID
-        ========================== */}
         <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-
           {services.map((service) => (
             <div
               key={service.title}
@@ -113,23 +96,23 @@ export default function Services() {
                 hover:shadow-orange-100/50
               "
             >
-
-              {/* Number */}
               <div className="absolute right-6 top-5 text-xs font-black tracking-widest text-slate-200 transition-colors group-hover:text-orange-200">
                 {service.number}
               </div>
 
-              {/* Icon */}
               <div
                 className="
                   flex
                   h-14
-                  w-14
+                  min-w-14
                   items-center
                   justify-center
                   rounded-2xl
                   bg-[#0F172A]
-                  text-xl
+                  px-3
+                  text-xs
+                  font-black
+                  tracking-wide
                   text-white
                   shadow-sm
                   transition-all
@@ -142,19 +125,16 @@ export default function Services() {
                 {service.icon}
               </div>
 
-              {/* Title */}
               <h3 className="mt-6 text-xl font-black text-[#0F172A]">
                 {service.title}
               </h3>
 
-              {/* Description */}
               <p className="mt-3 text-sm leading-6 text-[#64748B]">
                 {service.description}
               </p>
 
-              {/* Learn More */}
               <a
-                href="#pricing"
+                href="#tools"
                 className="
                   mt-6
                   inline-flex
@@ -168,46 +148,35 @@ export default function Services() {
                   group-hover:text-[#F97316]
                 "
               >
-                Learn More
-                <span>
-                  →
-                </span>
+                Explore Tools
+                <span>-&gt;</span>
               </a>
 
-              {/* Bottom Accent */}
               <div className="absolute bottom-0 left-0 h-1 w-0 bg-[#F97316] transition-all duration-300 group-hover:w-full" />
-
             </div>
           ))}
-
         </div>
 
-        {/* =========================
-            BOTTOM CONTENT
-        ========================== */}
         <div className="mt-14 overflow-hidden rounded-3xl bg-[#0F172A]">
-
           <div className="grid items-center gap-8 px-7 py-10 sm:px-10 lg:grid-cols-[1fr_auto] lg:px-12 lg:py-12">
-
             <div>
-
               <span className="text-sm font-bold uppercase tracking-[0.18em] text-[#F97316]">
-                Complete Growth Solution
+                Explore SEOMETRICHUB
               </span>
 
               <h3 className="mt-3 text-2xl font-black text-white sm:text-3xl">
-                Everything your business needs to grow online.
+                Practical tools for SEO and digital marketing workflows.
               </h3>
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-                From technical SEO to content and social media, build a
-                stronger digital presence with one powerful platform.
+                Use the currently available analysis and AI tools to review
+                websites, research keywords, create content, and compare
+                competitors.
               </p>
-
             </div>
 
             <a
-              href="#pricing"
+              href="#tools"
               className="
                 inline-flex
                 items-center
@@ -227,16 +196,11 @@ export default function Services() {
                 hover:shadow-orange-500/20
               "
             >
-              Start Growing
-              <span>
-                →
-              </span>
+              Explore Tools
+              <span>-&gt;</span>
             </a>
-
           </div>
-
         </div>
-
       </div>
     </section>
   );
