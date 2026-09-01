@@ -3,9 +3,9 @@
 import { useState } from "react";
 
 const stats = [
-  { value: "10K+", label: "Websites Analyzed" },
-  { value: "50K+", label: "Keywords Tracked" },
-  { value: "5K+", label: "Businesses" },
+  { value: "6", label: "SEO & Marketing Tools" },
+  { value: "Real", label: "Website Analysis" },
+  { value: "AI", label: "Content Generation" },
 ];
 
 export default function Hero() {
@@ -44,6 +44,7 @@ export default function Hero() {
               <span className="text-[#F97316]">
                 Smarter With SEO
               </span>
+
             </h1>
 
             {/* Description */}
@@ -84,8 +85,24 @@ export default function Hero() {
 
                 </div>
 
-                <a href={url.trim() ? `/audit?url=${encodeURIComponent(url.trim().startsWith("http") ? url.trim() : `https://${url.trim()}`)}` : "/audit"} className="relative z-10 inline-flex min-h-14 cursor-pointer items-center justify-center
+                <a
+                  href={
+                    url.trim()
+                      ? `/audit?url=${encodeURIComponent(
+                          url.trim().startsWith("http")
+                            ? url.trim()
+                            : `https://${url.trim()}`
+                        )}`
+                      : "/audit"
+                  }
+                  className="
+                    relative
+                    z-10
+                    inline-flex
                     min-h-14
+                    cursor-pointer
+                    items-center
+                    justify-center
                     rounded-xl
                     bg-[#F97316]
                     px-7
@@ -100,6 +117,7 @@ export default function Hero() {
                   "
                 >
                   Start Free Audit
+
                   <span className="ml-2">
                     -&gt;
                   </span>
@@ -151,6 +169,7 @@ export default function Hero() {
                 "
               >
                 Explore SEO Tools
+
                 <span className="ml-2">
                   -&gt;
                 </span>
@@ -215,7 +234,7 @@ export default function Hero() {
               <div className="p-5 sm:p-7">
 
                 {/* Dashboard Top */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
 
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -227,8 +246,16 @@ export default function Hero() {
                     </h3>
                   </div>
 
-                  <div className="rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-600">
-                    Healthy
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+
+                    <div className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600">
+                      Sample Data
+                    </div>
+
+                    <div className="rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-600">
+                      Healthy
+                    </div>
+
                   </div>
 
                 </div>
@@ -243,6 +270,7 @@ export default function Hero() {
                     </p>
 
                     <div className="mt-3 flex items-end gap-2">
+
                       <span className="text-4xl font-black text-[#0F172A]">
                         92
                       </span>
@@ -250,6 +278,7 @@ export default function Hero() {
                       <span className="mb-1 text-sm font-bold text-green-500">
                         /100
                       </span>
+
                     </div>
 
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -321,6 +350,7 @@ export default function Hero() {
                 <div className="mt-5 grid grid-cols-3 gap-3">
 
                   <div className="rounded-xl bg-slate-50 p-4">
+
                     <p className="text-[10px] font-semibold uppercase text-slate-400">
                       Keywords
                     </p>
@@ -328,9 +358,11 @@ export default function Hero() {
                     <p className="mt-2 text-lg font-black text-[#0F172A]">
                       1,284
                     </p>
+
                   </div>
 
                   <div className="rounded-xl bg-slate-50 p-4">
+
                     <p className="text-[10px] font-semibold uppercase text-slate-400">
                       Backlinks
                     </p>
@@ -338,9 +370,11 @@ export default function Hero() {
                     <p className="mt-2 text-lg font-black text-[#0F172A]">
                       3,842
                     </p>
+
                   </div>
 
                   <div className="rounded-xl bg-slate-50 p-4">
+
                     <p className="text-[10px] font-semibold uppercase text-slate-400">
                       Issues
                     </p>
@@ -348,6 +382,7 @@ export default function Hero() {
                     <p className="mt-2 text-lg font-black text-[#F97316]">
                       12
                     </p>
+
                   </div>
 
                 </div>
@@ -366,6 +401,7 @@ export default function Hero() {
                 </div>
 
                 <div>
+
                   <p className="text-xs font-semibold text-slate-400">
                     Organic Growth
                   </p>
@@ -373,6 +409,7 @@ export default function Hero() {
                   <p className="text-sm font-black text-[#0F172A]">
                     +42.8%
                   </p>
+
                 </div>
 
               </div>
@@ -399,6 +436,7 @@ export default function Hero() {
                 key={stat.label}
                 className="px-4 text-center"
               >
+
                 <div className="text-2xl font-black text-[#0F172A] sm:text-3xl">
                   {stat.value}
                 </div>
@@ -406,6 +444,7 @@ export default function Hero() {
                 <div className="mt-1 text-xs font-medium text-slate-500 sm:text-sm">
                   {stat.label}
                 </div>
+
               </div>
             ))}
 
@@ -418,10 +457,3 @@ export default function Hero() {
     </section>
   );
 }
-
-
-
-
-
-
-
