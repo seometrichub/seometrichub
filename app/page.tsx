@@ -80,7 +80,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/20 bg-orange-500/10 px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-[#F97316]" />
 
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316]">
                 Ready to Grow?
               </span>
             </div>
@@ -147,17 +147,17 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
 
               <span className="flex items-center gap-2">
-                <span className="text-[#F97316]">âœ“</span>
+                <span className="text-[#F97316]">✓</span>
                 SEO Tools
               </span>
 
               <span className="flex items-center gap-2">
-                <span className="text-[#F97316]">âœ“</span>
+                <span className="text-[#F97316]">✓</span>
                 AI Marketing
               </span>
 
               <span className="flex items-center gap-2">
-                <span className="text-[#F97316]">âœ“</span>
+                <span className="text-[#F97316]">✓</span>
                 Business Growth
               </span>
 
@@ -290,7 +290,7 @@ href="/audit?url=https%3A%2F%2Ffreejobnotifications.in%2F"
           <div className="mt-12 flex flex-col gap-4 border-t border-slate-200 pt-8 sm:flex-row sm:items-center sm:justify-between">
 
             <p className="text-sm text-[#94A3B8]">
-              Â© 2026 SEOMETRICHUB. All rights reserved.
+              © 2026 SEOMETRICHUB. All rights reserved.
             </p>
 
             <div className="flex items-center gap-5 text-sm">

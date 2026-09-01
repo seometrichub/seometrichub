@@ -63,7 +63,7 @@ export default function Hero() {
                 <div className="flex min-h-14 flex-1 items-center rounded-xl bg-slate-50 px-4">
 
                   <span className="mr-3 text-lg text-slate-400">
-                    ðŸ”
+                    Search
                   </span>
 
                   <input
@@ -101,7 +101,7 @@ export default function Hero() {
                 >
                   Start Free Audit
                   <span className="ml-2">
-                    â†’
+                    -&gt;
                   </span>
                 </a>
 
@@ -114,14 +114,14 @@ export default function Hero() {
 
               <span className="flex items-center gap-2">
                 <span className="font-bold text-[#F97316]">
-                  âœ“
+                  ✓
                 </span>
                 No credit card required
               </span>
 
               <span className="flex items-center gap-2">
                 <span className="font-bold text-[#F97316]">
-                  âœ“
+                  ✓
                 </span>
                 Instant SEO insights
               </span>
@@ -152,7 +152,7 @@ export default function Hero() {
               >
                 Explore SEO Tools
                 <span className="ml-2">
-                  â†’
+                  -&gt;
                 </span>
               </a>
 
@@ -228,7 +228,7 @@ export default function Hero() {
                   </div>
 
                   <div className="rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-600">
-                    â— Healthy
+                    Healthy
                   </div>
 
                 </div>
@@ -271,7 +271,7 @@ export default function Hero() {
                     </div>
 
                     <p className="mt-3 text-xs font-bold text-green-500">
-                      â†‘ 14.8% this month
+                      Up 14.8% this month
                     </p>
 
                   </div>
@@ -362,7 +362,7 @@ export default function Hero() {
               <div className="flex items-center gap-3">
 
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-50 text-lg">
-                  â†—
+                  Growth
                 </div>
 
                 <div>
