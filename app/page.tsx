@@ -9,50 +9,32 @@ import About from "@/components/sections/About";
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-[#0F172A]">
-
-      {/* =========================
-          NAVBAR
-      ========================== */}
+      {/* NAVBAR */}
       <Navbar />
 
-      {/* =========================
-          HERO
-      ========================== */}
+      {/* HERO */}
       <Hero />
 
-      {/* =========================
-          STATS
-      ========================== */}
+      {/* STATS */}
       <Stats />
 
-      {/* =========================
-          SEO TOOLS
-      ========================== */}
+      {/* SEO TOOLS */}
       <Features />
 
-      {/* =========================
-          SERVICES
-      ========================== */}
+      {/* SERVICES */}
       <Services />
 
-      {/* =========================
-          PRICING
-      ========================== */}
+      {/* PRICING */}
       <Pricing />
 
-      {/* =========================
-          ABOUT
-      ========================== */}
+      {/* ABOUT */}
       <About />
 
-      {/* =========================
-          FINAL CTA
-      ========================== */}
+      {/* FINAL CTA */}
       <section
         id="contact"
         className="relative overflow-hidden bg-white px-5 py-20 sm:px-6 lg:px-8 lg:py-28"
       >
-        {/* Background Glow */}
         <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-orange-100/50 blur-3xl" />
 
         <div
@@ -69,40 +51,31 @@ export default function Home() {
             lg:py-20
           "
         >
-          {/* Orange Glow */}
           <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#F97316]/20 blur-3xl" />
-
           <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[#F97316]/10 blur-3xl" />
 
           <div className="relative">
-
-            {/* Small Label */}
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-400/20 bg-orange-500/10 px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-[#F97316]" />
-
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316]">
-                Ready to Grow?
+                Explore Your SEO Opportunities
               </span>
             </div>
 
-            {/* Heading */}
             <h2 className="mx-auto mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Turn Your Website Into a{" "}
+              Understand Your Website and{" "}
               <span className="text-[#F97316]">
-                Growth Machine
+                Find Opportunities to Improve
               </span>
             </h2>
 
-            {/* Description */}
             <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">
-              Discover SEO opportunities, improve your online visibility
-              and attract more customers with smarter digital marketing tools.
+              Analyze important SEO signals, discover improvement opportunities,
+              and use practical SEO and AI marketing tools to support your
+              digital marketing decisions.
             </p>
 
-            {/* Buttons */}
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-
-              {/* Primary */}
               <a
                 href="/audit"
                 className="
@@ -125,7 +98,6 @@ export default function Home() {
                 </span>
               </a>
 
-              {/* Secondary */}
               <a
                 href="#pricing"
                 className="
@@ -141,60 +113,45 @@ export default function Home() {
                   hover:text-[#F97316]
                 "
               >
-                View Pricing
+                View Access Options
               </a>
-
             </div>
 
-            {/* Trust Text */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
-
               <span className="flex items-center gap-2">
                 <span className="text-[#F97316]">✓</span>
-                SEO Tools
+                SEO Analysis
               </span>
 
               <span className="flex items-center gap-2">
                 <span className="text-[#F97316]">✓</span>
-                AI Marketing
+                AI Marketing Tools
               </span>
 
               <span className="flex items-center gap-2">
                 <span className="text-[#F97316]">✓</span>
-                Business Growth
+                Competitor Insights
               </span>
-
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* =========================
-          FOOTER
-      ========================== */}
+      {/* FOOTER */}
       <footer className="border-t border-slate-200 bg-white">
-
         <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6 lg:px-8">
-
-          {/* Footer Main */}
           <div className="grid gap-12 md:grid-cols-4">
-
-            {/* Brand */}
             <div className="md:col-span-2">
-
               <a
                 href="/"
                 className="inline-flex items-center gap-3"
               >
-                {/* Logo */}
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F172A] shadow-sm">
                   <span className="text-lg font-black text-white">
                     S
                   </span>
                 </div>
 
-                {/* Brand Name */}
                 <div className="text-xl font-black tracking-tight text-[#0F172A]">
                   SEOMETRIC
                   <span className="text-[#F97316]">
@@ -204,30 +161,25 @@ export default function Home() {
               </a>
 
               <p className="mt-5 max-w-md text-sm leading-7 text-[#64748B]">
-                AI-powered SEO and digital marketing tools helping businesses
-                rank higher, reach more customers and grow online.
+                SEO analysis, research, and AI-powered marketing tools designed
+                to help businesses understand their online presence and make
+                better digital marketing decisions.
               </p>
 
-              {/* Status */}
               <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                 <span className="h-2 w-2 rounded-full bg-[#F97316]" />
-
                 <span className="text-xs font-semibold text-[#64748B]">
                   Built for modern businesses
                 </span>
               </div>
-
             </div>
 
-            {/* Platform */}
             <div>
-
               <h4 className="text-sm font-black text-[#0F172A]">
                 Platform
               </h4>
 
               <div className="mt-5 space-y-3 text-sm">
-
                 <a
                   href="#tools"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
@@ -246,22 +198,17 @@ export default function Home() {
                   href="#pricing"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
                 >
-                  Pricing
+                  Access
                 </a>
-
               </div>
-
             </div>
 
-            {/* Company */}
             <div>
-
               <h4 className="text-sm font-black text-[#0F172A]">
                 Company
               </h4>
 
               <div className="mt-5 space-y-3 text-sm">
-
                 <a
                   href="#about"
                   className="block text-[#64748B] transition hover:translate-x-1 hover:text-[#F97316]"
@@ -279,16 +226,11 @@ export default function Home() {
                 <span className="block text-[#64748B]">
                   Privacy
                 </span>
-
               </div>
-
             </div>
-
           </div>
 
-          {/* Footer Bottom */}
           <div className="mt-12 flex flex-col gap-4 border-t border-slate-200 pt-8 sm:flex-row sm:items-center sm:justify-between">
-
             <p className="text-sm text-[#94A3B8]">
               © 2026 SEOMETRICHUB. All rights reserved.
             </p>
@@ -302,13 +244,9 @@ export default function Home() {
                 Privacy
               </span>
             </div>
-
           </div>
-
         </div>
-
       </footer>
-
     </main>
   );
 }
