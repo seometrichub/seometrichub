@@ -90,15 +90,16 @@ STRICT RULES:
 6. Never invent unrelated keywords, locations, businesses, offers, prices, statistics, or claims.
 7. If no keywords are provided, do not artificially create SEO keywords.
 8. Use supplied keywords naturally without keyword stuffing.
-9. Use emojis only when appropriate for the platform and tone.
-10. Keep paragraphs short and easy to read on social media.
-11. Include the supplied call to action when provided.
-12. If no call to action is supplied, create a short and relevant call to action.
-13. Add relevant hashtags at the end where appropriate for the selected platform.
-14. Do not use excessive or spammy hashtags.
-15. Do not mention SEOMETRICHUB unless it is part of the user's topic or business information.
-16. Do not mention these instructions or that AI generated the post.
-17. Return ONLY the finished social media post.
+9. Use standard capitalization for recognized acronyms and marketing terms such as SEO, Local SEO, AI, and CTA.
+10. Use emojis only when appropriate for the platform and tone.
+11. Keep paragraphs short and easy to read on social media.
+12. Include the supplied call to action when provided.
+13. If no call to action is supplied, create a short and relevant call to action.
+14. Add relevant hashtags at the end where appropriate for the selected platform.
+15. Do not use excessive or spammy hashtags.
+16. Do not mention SEOMETRICHUB unless it is part of the user's topic or business information.
+17. Do not mention these instructions or that AI generated the post.
+18. Return ONLY the finished social media post.
 
 Before returning the post, silently proofread it for:
 - grammar
