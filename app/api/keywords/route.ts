@@ -105,6 +105,16 @@ function isUsefulKeyword(keyword: string): boolean {
   return false;
 }
 
+const noisySuggestionPatterns = [
+  /\bku\b/i,
+  /\bluxe\b/i,
+  /\bomscs\b/i,
+];
+
+if (noisySuggestionPatterns.some((pattern) => pattern.test(keyword))) {
+  return false;
+}
+
 const unwantedBrandPatterns = [
   /\bask properties\b/i,
   /\bsubhagruha\b/i,
@@ -735,6 +745,7 @@ export async function POST(request: Request) {
     );
   }
 }
+
 
 
 
