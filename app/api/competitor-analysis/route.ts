@@ -210,10 +210,8 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
   const finalUrl = response.url || normalized;
   const finalParsed = new URL(finalUrl);
 
-  const title =
-    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
-      ?.replace(/\s+/g, " ")
-      .trim() || "";
+  const rawTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "";
+  const title = stripHtml(rawTitle);
 
   const metaTags = html.match(/<meta\b[^>]*>/gi) || [];
 
@@ -547,3 +545,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
