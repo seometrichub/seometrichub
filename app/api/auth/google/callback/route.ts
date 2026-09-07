@@ -105,13 +105,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const response = NextResponse.json({
-      success: true,
-      connected: true,
-      message: "Google Search Console connected successfully.",
-      requestedSite: siteUrl,
-      connectedSite: matchingSite,
-    });
+    const response = NextResponse.redirect(new URL(`/audit?url=${encodeURIComponent(siteUrl)}&gsc=connected`, request.url));
 
     if (tokens.access_token) {
       response.cookies.set("gsc_access_token", tokens.access_token, {
