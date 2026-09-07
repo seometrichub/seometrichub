@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -154,9 +154,16 @@ const [searchConsoleError, setSearchConsoleError] =
 
 useEffect(() => {
   const queryUrl = searchParams.get("url");
+  const gscStatus = searchParams.get("gsc");
 
   if (queryUrl) {
     setUrl(queryUrl);
+  }
+
+  if (gscStatus === "access_denied") {
+    setSearchConsoleError(
+      "The connected Google account does not have access to this website's Search Console property. Please sign in with a Google account that has access to this property."
+    );
   }
 }, [searchParams]);
 useEffect(() => {

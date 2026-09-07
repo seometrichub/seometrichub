@@ -92,18 +92,13 @@ export async function GET(request: Request) {
     });
 
     if (!matchingSite) {
-      return NextResponse.json(
-        {
-          success: false,
-          connected: false,
-          error:
-            "Your Google account does not have access to this Search Console property.",
-          requestedSite: siteUrl,
-          availableSites: sites,
-        },
-        { status: 403 }
-      );
-    }
+        return NextResponse.redirect(
+          new URL(
+            `/audit?url=${encodeURIComponent(siteUrl)}&gsc=access_denied`,
+            request.url
+          )
+        );
+      }
 
     const response = NextResponse.redirect(new URL(`/audit?url=${encodeURIComponent(siteUrl)}&gsc=connected`, request.url));
 
