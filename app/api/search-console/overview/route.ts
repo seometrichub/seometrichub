@@ -207,7 +207,31 @@ export async function GET(request: Request) {
     const startDateString = formatDate(startDate);
     const endDateString = formatDate(endDate);
 
-    const response =
+    const summaryResponse =
+      await searchConsole.searchanalytics.query({
+        siteUrl,
+        requestBody: {
+          startDate: startDateString,
+          endDate: endDateString,
+        },
+      });
+
+    const summaryRow =
+      summaryResponse.data.rows?.[0];
+
+    const totalClicks = summaryRow?.clicks ?? 0;
+    const totalImpressions =
+      summaryRow?.impressions ?? 0;
+
+    const averageCtr = Number(
+      ((summaryRow?.ctr ?? 0) * 100).toFixed(2)
+    );
+
+    const averagePosition = Number(
+      (summaryRow?.position ?? 0).toFixed(2)
+    );
+
+    const queriesResponse =
       await searchConsole.searchanalytics.query({
         siteUrl,
         requestBody: {
@@ -218,33 +242,7 @@ export async function GET(request: Request) {
         },
       });
 
-    const rows = response.data.rows || [];
-
-    let totalClicks = 0;
-    let totalImpressions = 0;
-    let totalCtr = 0;
-    let totalPosition = 0;
-
-    for (const row of rows) {
-      totalClicks += row.clicks ?? 0;
-      totalImpressions += row.impressions ?? 0;
-      totalCtr += row.ctr ?? 0;
-      totalPosition += row.position ?? 0;
-    }
-
-    const averageCtr =
-      rows.length > 0
-        ? Number(
-            ((totalCtr / rows.length) * 100).toFixed(2)
-          )
-        : 0;
-
-    const averagePosition =
-      rows.length > 0
-        ? Number(
-            (totalPosition / rows.length).toFixed(2)
-          )
-        : 0;
+    const rows = queriesResponse.data.rows || [];
 
     return NextResponse.json({
       success: true,
