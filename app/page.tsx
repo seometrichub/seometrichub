@@ -1,4 +1,4 @@
-﻿import Navbar from "@/components/layout/Navbar";
+import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/sections/Hero";
 import Stats from "@/components/sections/Stats";
 import Features from "@/components/sections/Features";
@@ -236,13 +236,9 @@ export default function Home() {
             </p>
 
             <div className="flex items-center gap-5 text-sm">
-              <span className="text-[#94A3B8]">
-                Terms
-              </span>
+              <a href="/terms" className="text-[#94A3B8] transition hover:text-[#0F172A]">Terms</a>
 
-              <span className="text-[#94A3B8]">
-                Privacy
-              </span>
+              <a href="/privacy" className="text-[#94A3B8] transition hover:text-[#0F172A]">Privacy</a>
             </div>
           </div>
         </div>
