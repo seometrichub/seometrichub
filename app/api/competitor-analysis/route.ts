@@ -227,7 +227,7 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
       !description &&
       (name === "description" || property === "og:description")
     ) {
-      description = content;
+      description = stripHtml(content);
     }
 
     if (name === "viewport") {
