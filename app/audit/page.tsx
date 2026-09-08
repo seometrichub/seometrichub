@@ -271,7 +271,9 @@ const loadSearchConsole = async (siteUrl: string) => {
      
 setUrl(websiteUrl);
 setAudit(data as AuditResult);
-loadSearchConsole(websiteUrl);
+if (searchParams.get("gsc") !== "access_denied") {
+    loadSearchConsole(websiteUrl);
+  }
 
 
     } catch (err) {
@@ -572,7 +574,7 @@ loadSearchConsole(websiteUrl);
                   value={`${safeNumber(audit.details?.h1Count)}`}
                   extra={
                     audit.details?.h1Count === 1
-                      ? "One H1 tag detected — ideal."
+                      ? "One H1 tag detected â€” ideal."
                       : audit.details?.h1Count === 0
                       ? "No H1 tag found. Add one clear primary H1."
                       : "Multiple H1 tags found. Check heading structure."
@@ -851,7 +853,7 @@ loadSearchConsole(websiteUrl);
                       ? "Title length is within the recommended range."
                       : `Current title length: ${safeNumber(
                           audit.details?.titleLength
-                        )} characters. Recommended: 30–60 characters.`
+                        )} characters. Recommended: 30â€“60 characters.`
                   }
                 />
 
@@ -867,7 +869,7 @@ loadSearchConsole(websiteUrl);
                       ? "Meta description length is within the recommended range."
                       : `Current description length: ${safeNumber(
                           audit.details?.descriptionLength
-                        )} characters. Recommended: 70–160 characters.`
+                        )} characters. Recommended: 70â€“160 characters.`
                   }
                 />
 
@@ -1252,7 +1254,7 @@ loadSearchConsole(websiteUrl);
       <footer className="border-t border-[#E2E8F0] bg-white">
         <div className="mx-auto max-w-7xl px-5 py-8 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-[#94A3B8]">
-            © 2026 SEOMETRICHUB. All rights reserved.
+            Â© 2026 SEOMETRICHUB. All rights reserved.
           </p>
         </div>
       </footer>
@@ -1901,7 +1903,7 @@ function BacklinkCard({
       </p>
 
       <p className="mt-3 text-4xl font-black text-[#0F172A]">
-        {hasValue ? value : "—"}
+        {hasValue ? value : "â€”"}
       </p>
 
       <p className="mt-2 text-sm leading-6 text-[#94A3B8]">
@@ -2100,18 +2102,18 @@ function getScoreMessage(score: number): string {
   const safeScore = clampScore(score);
 
   if (safeScore >= 90) {
-    return "Excellent — your website is well optimized";
+    return "Excellent â€” your website is well optimized";
   }
 
   if (safeScore >= 75) {
-    return "Good — room for improvement";
+    return "Good â€” room for improvement";
   }
 
   if (safeScore >= 50) {
-    return "Needs Work — several improvements are recommended";
+    return "Needs Work â€” several improvements are recommended";
   }
 
-  return "Poor — important SEO issues need attention";
+  return "Poor â€” important SEO issues need attention";
 }
 
 
@@ -2131,6 +2133,7 @@ export default function AuditPage() {
     </Suspense>
   );
 }
+
 
 
 
