@@ -380,7 +380,7 @@ if (searchParams.get("gsc") !== "access_denied") {
                 disabled={analyzing}
                 className="h-14 rounded-xl bg-[#F97316] px-7 font-bold text-white transition-all hover:bg-[#EA580C] hover:shadow-lg hover:shadow-orange-200 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {analyzing ? "Analyzing..." : "Analyze Website ?"}
+                {analyzing ? "Analyzing..." : "Analyze Website \u2192"}
               </button>
             </div>
 
@@ -411,7 +411,7 @@ if (searchParams.get("gsc") !== "access_denied") {
                 className="flex items-center gap-4 rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-lg font-black text-[#F97316]">
-                  ?
+                  {"\u2713"}
                 </div>
 
                 <span className="font-bold text-[#0F172A]">
@@ -433,7 +433,7 @@ if (searchParams.get("gsc") !== "access_denied") {
             {/* AUDIT COMPLETE */}
             <div className="text-center">
               <span className="inline-flex rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-bold text-green-600">
-                ? Audit Complete
+                {"\u2713"} Audit Complete
               </span>
 
               <h2 className="mt-5 text-4xl font-black text-[#0F172A] sm:text-5xl">
@@ -582,7 +582,7 @@ if (searchParams.get("gsc") !== "access_denied") {
                   value={`${safeNumber(audit.details?.h1Count)}`}
                   extra={
                     audit.details?.h1Count === 1
-                      ? "One H1 tag detected Ã¢â‚¬â€ ideal."
+                      ? "One H1 tag detected \u2014 ideal."
                       : audit.details?.h1Count === 0
                       ? "No H1 tag found. Add one clear primary H1."
                       : "Multiple H1 tags found. Check heading structure."
@@ -861,7 +861,7 @@ if (searchParams.get("gsc") !== "access_denied") {
                       ? "Title length is within the recommended range."
                       : `Current title length: ${safeNumber(
                           audit.details?.titleLength
-                        )} characters. Recommended: 30Ã¢â‚¬â€œ60 characters.`
+                        )} characters. Recommended: 30\u201360 characters.`
                   }
                 />
 
@@ -877,7 +877,7 @@ if (searchParams.get("gsc") !== "access_denied") {
                       ? "Meta description length is within the recommended range."
                       : `Current description length: ${safeNumber(
                           audit.details?.descriptionLength
-                        )} characters. Recommended: 70Ã¢â‚¬â€œ160 characters.`
+                        )} characters. Recommended: 70\u2013160 characters.`
                   }
                 />
 
@@ -1033,7 +1033,7 @@ if (searchParams.get("gsc") !== "access_denied") {
             </div>
 
             <p className="text-xs text-emerald-700">
-              {searchConsole.period?.startDate} ?{" "}
+              {searchConsole.period?.startDate}{" \u2013 "}
               {searchConsole.period?.endDate}
             </p>
           </div>
@@ -1251,7 +1251,7 @@ if (searchParams.get("gsc") !== "access_denied") {
                 onClick={runAnotherAudit}
                 className="mt-7 inline-flex rounded-xl bg-[#F97316] px-7 py-3.5 font-bold text-white transition hover:bg-[#EA580C]"
               >
-                Run Another Audit ?
+                Run Another Audit {"\u2192"}
               </button>
             </div>
           </div>
@@ -1262,7 +1262,7 @@ if (searchParams.get("gsc") !== "access_denied") {
       <footer className="border-t border-[#E2E8F0] bg-white">
         <div className="mx-auto max-w-7xl px-5 py-8 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-[#94A3B8]">
-            Ã‚Â© 2026 SEOMETRICHUB. All rights reserved.
+            {"\u00A9"} 2026 SEOMETRICHUB. All rights reserved.
           </p>
         </div>
       </footer>
@@ -1320,7 +1320,7 @@ function MetaIntelligenceCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 text-xl font-black text-[#F97316]">
-              ?
+              {"\u2726"}
             </div>
 
             <div>
@@ -1560,7 +1560,7 @@ function MetaWeakness({
               : "bg-orange-100 text-orange-600"
           }`}
         >
-          {good ? "?" : "!"}
+          {good ? "\u2713" : "!"}
         </div>
 
         <div>
@@ -1911,7 +1911,7 @@ function BacklinkCard({
       </p>
 
       <p className="mt-3 text-4xl font-black text-[#0F172A]">
-        {hasValue ? value : "Ã¢â‚¬â€"}
+        {hasValue ? value : "\u2014"}
       </p>
 
       <p className="mt-2 text-sm leading-6 text-[#94A3B8]">
@@ -1931,7 +1931,7 @@ function RecommendationCard({
   const isSuccess = recommendation.type === "success";
   const isError = recommendation.type === "error";
 
-  const icon = isSuccess ? "?" : "!";
+  const icon = isSuccess ? "\u2713" : "!";
   const iconClass = isSuccess
     ? "bg-green-50 text-green-600"
     : isError
@@ -2048,7 +2048,7 @@ function AuditIssue({
             : "bg-orange-50 text-orange-600"
         }`}
       >
-        {passed ? "?" : "!"}
+        {passed ? "\u2713" : "!"}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -2110,18 +2110,18 @@ function getScoreMessage(score: number): string {
   const safeScore = clampScore(score);
 
   if (safeScore >= 90) {
-    return "Excellent Ã¢â‚¬â€ your website is well optimized";
+    return "Excellent \u2014 your website is well optimized";
   }
 
   if (safeScore >= 75) {
-    return "Good Ã¢â‚¬â€ room for improvement";
+    return "Good \u2014 room for improvement";
   }
 
   if (safeScore >= 50) {
-    return "Needs Work Ã¢â‚¬â€ several improvements are recommended";
+    return "Needs Work \u2014 several improvements are recommended";
   }
 
-  return "Poor Ã¢â‚¬â€ important SEO issues need attention";
+  return "Poor \u2014 important SEO issues need attention";
 }
 
 
