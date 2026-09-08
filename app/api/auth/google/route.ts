@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline",
-      prompt: "consent",
+      prompt: "consent select_account",
       state: siteUrl,
       scope: [
         "https://www.googleapis.com/auth/webmasters.readonly",
@@ -56,3 +56,4 @@ export async function GET(request: Request) {
     );
   }
 }
+
