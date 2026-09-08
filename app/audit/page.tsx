@@ -1511,7 +1511,7 @@ function MetaAnalysisBox({
         {value}
       </p>
 
-      <div className="mt-5 flex items-center justify-between text-xs">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="font-bold text-[#64748B]">
           {length} characters
         </span>
@@ -1605,7 +1605,7 @@ function RecommendedMetaBox({
         {value}
       </p>
 
-      <div className="mt-4 flex items-center justify-between text-xs">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="font-semibold text-[#64748B]">
           SEO-ready recommendation
         </span>
