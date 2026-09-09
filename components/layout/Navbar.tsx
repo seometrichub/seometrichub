@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { label: "SEO Tools", href: "/#tools" },
@@ -11,6 +13,31 @@ const navItems = [
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setMenuOpen(false);
+    window.location.href = "/";
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
@@ -80,6 +107,31 @@ export default function Navbar() {
 
         {/* DESKTOP ACTIONS */}
         <div className="hidden items-center gap-3 md:flex">
+          {user ? (
+            <>
+              <span
+                className="max-w-40 truncate text-sm font-semibold text-slate-600"
+                title={user.email ?? "Signed in"}
+              >
+                {user.email ?? "Signed in"}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#0F172A] transition-colors hover:text-[#F97316]"
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <a
+              href="/login"
+              className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#0F172A] transition-colors hover:text-[#F97316]"
+            >
+              Log In
+            </a>
+          )}
           <a
             href="/audit"
             className="
@@ -177,6 +229,33 @@ export default function Navbar() {
                   {item.label}
                 </a>
               ))}
+
+              {user ? (
+                <div className="mt-4 rounded-lg border border-slate-200 p-3">
+                  <p
+                    className="truncate text-center text-sm font-semibold text-slate-600"
+                    title={user.email ?? "Signed in"}
+                  >
+                    {user.email ?? "Signed in"}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="mt-3 w-full rounded-lg border border-slate-200 px-5 py-3 text-sm font-semibold text-[#0F172A] transition hover:border-[#F97316] hover:text-[#F97316]"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-4 rounded-lg border border-slate-200 px-5 py-3 text-center text-sm font-semibold text-[#0F172A] transition hover:border-[#F97316] hover:text-[#F97316]"
+                >
+                  Log In
+                </a>
+              )}
 
               <a
                 href="/audit"
