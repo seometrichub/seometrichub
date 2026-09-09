@@ -11,10 +11,8 @@ export async function GET(request: Request) {
   }
 
   if (!code) {
-    console.error("Supabase auth callback: missing authorization code");
-
     return NextResponse.redirect(
-      `${origin}/login?error=auth_callback_failed`
+      `${origin}/login?error=missing_code`
     );
   }
 
@@ -23,6 +21,12 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
+    const safeError =
+      error.code ||
+      (error.message.toLowerCase().includes("code verifier")
+        ? "code_verifier_missing"
+        : "exchange_failed");
+
     console.error("Supabase auth callback exchange failed:", {
       message: error.message,
       status: error.status,
@@ -30,7 +34,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.redirect(
-      `${origin}/login?error=auth_callback_failed`
+      `${origin}/login?error=${encodeURIComponent(safeError)}`
     );
   }
 
