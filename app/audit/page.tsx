@@ -2,6 +2,8 @@
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/sections/Footer";
 
 
 type BacklinkData = {
@@ -310,24 +312,7 @@ if (searchParams.get("gsc") !== "access_denied") {
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
-      {/* HEADER */}
-      <header className="border-b border-[#E2E8F0] bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8">
-          <a
-            href="/"
-            className="text-xl font-black tracking-tight text-[#0F172A]"
-          >
-            SEOMETRIC<span className="text-[#F97316]">HUB</span>
-          </a>
-
-          <a
-            href="/"
-            className="text-sm font-semibold text-[#475569] transition hover:text-[#F97316]"
-          >
-            ? Back to Home
-          </a>
-        </div>
-      </header>
+      <Navbar />
 
       {/* HERO */}
       <section className="px-5 pb-16 pt-20 sm:px-6 lg:px-8 lg:pt-28">
@@ -1258,14 +1243,7 @@ if (searchParams.get("gsc") !== "access_denied") {
         </section>
       )}
 
-      {/* FOOTER */}
-      <footer className="border-t border-[#E2E8F0] bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-8 text-center sm:px-6 lg:px-8">
-          <p className="text-sm text-[#94A3B8]">
-            {"\u00A9"} 2026 SEOMETRICHUB. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

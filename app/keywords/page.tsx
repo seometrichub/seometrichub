@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/sections/Footer";
 
 type KeywordItem = {
   rank: number;
@@ -171,35 +173,7 @@ export default function KeywordsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-6 lg:px-8">
-          <a
-            href="/"
-            className="inline-flex items-center gap-3"
-          >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F172A] shadow-sm">
-              <span className="text-lg font-black text-white">
-                S
-              </span>
-            </div>
-
-            <div className="text-xl font-black tracking-tight text-[#0F172A]">
-              SEOMETRIC
-              <span className="text-[#F97316]">
-                HUB
-              </span>
-            </div>
-          </a>
-
-          <a
-            href="/audit"
-            className="hidden rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-[#0F172A] transition hover:border-[#F97316] hover:text-[#F97316] sm:inline-flex"
-          >
-            SEO Audit
-          </a>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-white">
@@ -689,14 +663,7 @@ export default function KeywordsPage() {
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-8 text-center sm:px-6 lg:px-8">
-          <p className="text-xs font-semibold text-slate-400">
-            © 2026 SEOMETRICHUB. Smarter SEO. Better growth.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

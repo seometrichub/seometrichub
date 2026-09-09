@@ -1,3 +1,5 @@
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/sections/Footer";
 export const metadata = {
   title: "Terms of Service | SEOMETRICHUB",
   description:
@@ -6,7 +8,9 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-white text-slate-900">
+      <Navbar />
+      <main>
       <section className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">
@@ -309,6 +313,8 @@ export default function TermsPage() {
           </section>
         </div>
       </section>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }

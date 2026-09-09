@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/sections/Footer";
 
 type GeneratorResponse = {
   success: boolean;
@@ -83,7 +85,9 @@ export default function ContentGeneratorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Navbar />
+      <main>
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8 lg:py-20">
           <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-[#F97316]">
@@ -333,6 +337,8 @@ export default function ContentGeneratorPage() {
           )}
         </div>
       </section>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }

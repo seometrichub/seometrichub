@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/sections/Footer";
 
 type PageAnalysis = {
   url: string;
@@ -145,7 +147,9 @@ export default function CompetitorAnalysisPage() {
     : [];
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <Navbar />
+      <main>
       <section className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
           <div className="max-w-3xl">
@@ -603,6 +607,8 @@ export default function CompetitorAnalysisPage() {
           </div>
         )}
       </section>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }

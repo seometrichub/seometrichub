@@ -3,10 +3,10 @@
 import { useState } from "react";
 
 const navItems = [
-  { label: "SEO Tools", href: "#tools" },
-  { label: "Services", href: "#services" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "About", href: "#about" },
+  { label: "SEO Tools", href: "/#tools" },
+  { label: "Services", href: "/#services" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "About", href: "/#about" },
 ];
 
 export default function Navbar() {

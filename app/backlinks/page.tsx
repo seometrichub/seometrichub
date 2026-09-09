@@ -1,6 +1,8 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useState } from "react";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/sections/Footer";
 
 type BacklinkResult = {
   success: boolean;
@@ -70,7 +72,9 @@ export default function BacklinksPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] px-5 py-16 text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
+      <Navbar />
+      <main className="px-5 py-16">
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
@@ -209,7 +213,9 @@ export default function BacklinksPage() {
           </p>
         </div>
       </div>
-    </main>
+      </main>
+      <Footer />
+    </div>
   );
 }
 
