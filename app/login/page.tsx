@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
@@ -14,6 +14,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isConfirmed = params.get("confirmed") === "true";
+
+    setConfirmed(isConfirmed);
+
+    if (isConfirmed && params.has("code")) {
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}?confirmed=true`
+      );
+    }
+  }, []);
 
   async function handleGoogleLogin() {
     setError("");
@@ -64,6 +80,12 @@ export default function LoginPage() {
               Sign in to your SEOMETRICHUB account.
             </p>
           </div>
+
+          {confirmed && (
+            <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              Email confirmed. You can now sign in.
+            </div>
+          )}
 
           <button
             type="button"
