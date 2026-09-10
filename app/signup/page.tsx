@@ -11,8 +11,27 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  async function handleGoogleSignup() {
+    setError("");
+    setMessage("");
+    setGoogleLoading(true);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+  }
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,6 +72,24 @@ export default function SignupPage() {
             <p className="mt-2 text-sm text-slate-600">
               Create a free SEOMETRICHUB account.
             </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={googleLoading || loading}
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="text-lg font-bold text-blue-600">G</span>
+            {googleLoading ? "Connecting to Google..." : "Continue with Google"}
+          </button>
+
+          <div className="my-6 flex items-center gap-4">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-bold uppercase text-slate-400">
+              OR
+            </span>
+            <div className="h-px flex-1 bg-slate-200" />
           </div>
 
           <form onSubmit={handleSignup} className="space-y-5">
@@ -109,7 +146,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleLoading}
               className="w-full rounded-lg bg-[#F97316] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#EA580C] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Creating account..." : "Create Account"}
