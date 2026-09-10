@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -58,6 +59,23 @@ export async function POST(request: Request) {
   const startTime = performance.now();
 
   try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please sign in to run a website audit.",
+        },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json().catch(() => null);
     const inputUrl = body?.url;
 
@@ -159,6 +177,57 @@ export async function POST(request: Request) {
     }
 
     const html = await response.text();
+
+    const { data: quotaRows, error: quotaError } = await supabase.rpc(
+      "consume_tool_usage",
+      {
+        p_user_id: user.id,
+        p_tool: "website_audit",
+      },
+    );
+
+    if (quotaError) {
+      console.error("Website audit quota check failed:", {
+        message: quotaError.message,
+        code: quotaError.code,
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to verify your audit usage limit.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : null;
+
+    if (!quota) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to verify your audit usage limit.",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Monthly website audit limit reached.",
+          quota: {
+            used: quota.used,
+            limit: quota.limit_value,
+            remaining: quota.remaining,
+            periodEnd: quota.period_end,
+          },
+        },
+        { status: 429 },
+      );
+    }
 
     const htmlSizeKB = Number(
       (Buffer.byteLength(html, "utf8") / 1024).toFixed(1),
