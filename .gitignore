@@ -27,3 +27,7 @@ pnpm-debug.log*
 # misc
 .DS_Store
 *.pem
+# local backup files
+*.quota-backup
+*.supabase-backup
+*.pricing-backup
