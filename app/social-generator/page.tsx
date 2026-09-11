@@ -9,6 +9,12 @@ type SocialResponse = {
   success: boolean;
   content?: string;
   error?: string;
+  quota?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    periodEnd?: string;
+  };
 };
 
 export default function SocialGeneratorPage() {
@@ -23,6 +29,7 @@ export default function SocialGeneratorPage() {
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [quota, setQuota] = useState<SocialResponse["quota"]>(undefined);
 
   const wordCount = result.trim()
     ? result.trim().split(/\s+/).length
@@ -40,6 +47,7 @@ export default function SocialGeneratorPage() {
     setError("");
     setResult("");
     setCopied(false);
+    setQuota(undefined);
 
     try {
       const response = await fetch("/api/social-generator", {
@@ -58,6 +66,10 @@ export default function SocialGeneratorPage() {
       });
 
       const data: SocialResponse = await response.json();
+
+      if (data.quota) {
+        setQuota(data.quota);
+      }
 
       if (!response.ok || !data.success) {
         setError(data.error || "Unable to generate social media content.");
@@ -109,6 +121,77 @@ export default function SocialGeneratorPage() {
           </p>
         </div>
       </section>
+
+      {quota && (
+        <section className="mx-auto max-w-7xl px-5 pt-10 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-orange-200 bg-orange-50 p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-orange-600">
+                Monthly Usage
+              </p>
+              <h2 className="text-2xl font-black text-[#0F172A]">
+                Social Generation Usage
+              </h2>
+              <p className="text-sm leading-6 text-[#64748B]">
+                Your monthly plan usage for AI social media generation.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-orange-100 bg-white p-5">
+                <p className="text-3xl font-black text-[#0F172A]">
+                  {quota.used}
+                </p>
+                <p className="mt-1 text-sm font-bold text-[#64748B]">Used</p>
+              </div>
+
+              <div className="rounded-2xl border border-orange-100 bg-white p-5">
+                <p className="text-3xl font-black text-[#0F172A]">
+                  {quota.limit}
+                </p>
+                <p className="mt-1 text-sm font-bold text-[#64748B]">Limit</p>
+              </div>
+
+              <div className="rounded-2xl border border-orange-100 bg-white p-5">
+                <p className="text-3xl font-black text-[#0F172A]">
+                  {quota.remaining}
+                </p>
+                <p className="mt-1 text-sm font-bold text-[#64748B]">Remaining</p>
+              </div>
+            </div>
+
+            <div className="mt-6 h-3 overflow-hidden rounded-full bg-orange-100">
+              <div
+                className="h-full rounded-full bg-orange-500 transition-all"
+                style={{
+                  width: `${Math.min(
+                    quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0,
+                    100,
+                  )}%`,
+                }}
+              />
+            </div>
+
+            {quota.remaining > 0 ? (
+              <p className="mt-4 text-sm font-bold text-orange-800">
+                {quota.remaining === 1
+                  ? "1 social generation remaining this month"
+                  : `${quota.remaining} social generations remaining this month`}
+              </p>
+            ) : (
+              <div className="mt-5 rounded-2xl border border-orange-200 bg-white p-5">
+                <p className="font-black text-orange-900">
+                  Monthly limit reached
+                </p>
+                <p className="mt-2 text-sm leading-6 text-orange-800">
+                  You have used all social generations included in your current
+                  plan. Upgrade your plan or wait until your monthly usage resets.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-6 lg:grid-cols-[420px_1fr] lg:px-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
