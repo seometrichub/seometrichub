@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 const BOT_USER_AGENT =
   "Mozilla/5.0 (compatible; SEOMETRICHUB Link Analysis Bot/1.0)";
@@ -44,6 +45,23 @@ function getAttribute(tag: string, attribute: string) {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please sign in to use backlink analysis.",
+        },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json().catch(() => null);
     const inputUrl = body?.url;
 
@@ -132,6 +150,57 @@ export async function POST(request: Request) {
 
     const html = await response.text();
     const finalUrl = new URL(response.url || targetUrl.toString());
+
+    const { data: quotaRows, error: quotaError } = await supabase.rpc(
+      "consume_tool_usage",
+      {
+        p_user_id: user.id,
+        p_tool: "backlink_analysis",
+      }
+    );
+
+    if (quotaError) {
+      console.error("Backlink quota check failed:", {
+        message: quotaError.message,
+        code: quotaError.code,
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to verify your backlink analysis usage limit.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : null;
+
+    if (!quota) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to verify your backlink analysis usage limit.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Monthly backlink analysis limit reached.",
+          quota: {
+            used: quota.used,
+            limit: quota.limit_value,
+            remaining: quota.remaining,
+            periodEnd: quota.period_end,
+          },
+        },
+        { status: 429 }
+      );
+    }
 
     const anchorTags =
       html.match(/<a\b[^>]*>/gi) ?? [];
