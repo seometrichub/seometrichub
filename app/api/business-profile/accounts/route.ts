@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { google } from "googleapis";
 
 export async function GET(request: Request) {
   try {
@@ -8,6 +7,8 @@ export async function GET(request: Request) {
       ?.match(/(?:^|;\s*)gbp_access_token=([^;]+)/)?.[1];
 
     if (!accessToken) {
+      console.error("GBP accounts: gbp_access_token cookie missing");
+
       return NextResponse.json(
         {
           success: false,
@@ -17,50 +18,47 @@ export async function GET(request: Request) {
       );
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_BUSINESS_REDIRECT_URI;
-
-    if (!clientId || !clientSecret || !redirectUri) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Google Business Profile OAuth configuration is missing.",
-        },
-        { status: 500 }
-      );
-    }
-
-    const oauth2Client = new google.auth.OAuth2(
-      clientId,
-      clientSecret,
-      redirectUri
-    );
-
-    oauth2Client.setCredentials({
-      access_token: accessToken,
-    });
+    console.log("GBP accounts: access token cookie found");
 
     const response = await fetch(
       "https://mybusinessaccountmanagement.googleapis.com/v1/accounts",
       {
+        method: "GET",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${decodeURIComponent(accessToken)}`,
+          Accept: "application/json",
         },
+        cache: "no-store",
       }
     );
 
-    const data = await response.json();
+    const rawText = await response.text();
+
+    console.log("GBP accounts API status:", response.status);
+    console.log(
+      "GBP accounts API response:",
+      rawText || "(empty response body)"
+    );
+
+    let data: any = {};
+
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = {};
+      }
+    }
 
     if (!response.ok) {
-      console.error("GBP accounts API error:", data);
-
       return NextResponse.json(
         {
           success: false,
+          status: response.status,
           error:
             data?.error?.message ||
-            "Failed to fetch Google Business Profile accounts.",
+            rawText ||
+            `Google Business Profile API returned HTTP ${response.status}.`,
         },
         { status: response.status }
       );
@@ -71,7 +69,10 @@ export async function GET(request: Request) {
       accounts: data.accounts || [],
     });
   } catch (error: any) {
-    console.error("GBP accounts error:", error);
+    console.error(
+      "GBP accounts route error:",
+      error?.message || error
+    );
 
     return NextResponse.json(
       {

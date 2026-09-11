@@ -13,6 +13,7 @@ type GoogleLocation = {
   websiteUri?: string;
   phoneNumbers?: {
     primaryPhone?: string;
+    additionalPhones?: string[];
   };
   storefrontAddress?: {
     addressLines?: string[];
@@ -20,6 +21,46 @@ type GoogleLocation = {
     administrativeArea?: string;
     postalCode?: string;
     regionCode?: string;
+  };
+  categories?: {
+    primaryCategory?: {
+      name?: string;
+      displayName?: string;
+    };
+    additionalCategories?: Array<{
+      name?: string;
+      displayName?: string;
+    }>;
+  };
+  regularHours?: {
+    periods?: Array<{
+      openDay?: string;
+      openTime?: {
+        hours?: number;
+        minutes?: number;
+      };
+      closeDay?: string;
+      closeTime?: {
+        hours?: number;
+        minutes?: number;
+      };
+    }>;
+  };
+  specialHours?: {
+    specialHourPeriods?: unknown[];
+  };
+  openInfo?: {
+    status?: string;
+    canReopen?: boolean;
+    openingDate?: {
+      year?: number;
+      month?: number;
+      day?: number;
+    };
+  };
+  metadata?: {
+    mapsUri?: string;
+    newReviewUri?: string;
   };
 };
 
@@ -30,6 +71,7 @@ export default function BusinessAuditPage() {
   const [accounts, setAccounts] = useState<GoogleAccount[]>([]);
   const [locations, setLocations] = useState<GoogleLocation[]>([]);
   const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<GoogleLocation | null>(null);
 
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [loadingLocations, setLoadingLocations] = useState(false);
@@ -132,9 +174,11 @@ export default function BusinessAuditPage() {
     );
 
     if (!selectedLocation) {
+      setSelectedLocation(null);
       return;
     }
 
+    setSelectedLocation(selectedLocation);
     setBusinessName(selectedLocation.title || "");
 
     const address = selectedLocation.storefrontAddress;
@@ -150,6 +194,28 @@ export default function BusinessAuditPage() {
       setLocation(addressParts.join(", "));
     }
   };
+
+  const completenessChecks = selectedLocation
+    ? [
+        Boolean(selectedLocation.title),
+        Boolean(selectedLocation.websiteUri),
+        Boolean(selectedLocation.phoneNumbers?.primaryPhone),
+        Boolean(selectedLocation.storefrontAddress),
+        Boolean(selectedLocation.categories?.primaryCategory),
+        Boolean(selectedLocation.regularHours?.periods?.length),
+        Boolean(selectedLocation.openInfo?.status),
+        Boolean(selectedLocation.metadata?.mapsUri),
+      ]
+    : [];
+
+  const completedChecks = completenessChecks.filter(Boolean).length;
+
+  const profileCompleteness =
+    completenessChecks.length > 0
+      ? Math.round(
+          (completedChecks / completenessChecks.length) * 100
+        )
+      : null;
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] px-6 py-12">
@@ -334,7 +400,8 @@ export default function BusinessAuditPage() {
           {[
             {
               title: "Profile Completeness",
-              description:
+              value: profileCompleteness !== null ? `${profileCompleteness}%` : null,
+                description:
                 "Check important business profile information.",
             },
             {
@@ -360,6 +427,12 @@ export default function BusinessAuditPage() {
               <h3 className="font-semibold text-[#0F172A]">
                 {item.title}
               </h3>
+
+                {"value" in item && item.value && (
+                  <p className="mt-3 text-3xl font-bold text-[#2563EB]">
+                    {item.value}
+                  </p>
+                )}
 
               <p className="mt-2 text-sm leading-6 text-[#64748B]">
                 {item.description}
