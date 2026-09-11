@@ -6,7 +6,7 @@ import Footer from "@/components/sections/Footer";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignupPage() {
-  const supabase = createClient();
+
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +16,7 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
 
   async function handleGoogleSignup() {
+    const supabase = createClient();
     setError("");
     setMessage("");
     setGoogleLoading(true);
@@ -34,6 +35,7 @@ export default function SignupPage() {
   }
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
+    const supabase = createClient();
     event.preventDefault();
     setLoading(true);
     setError("");
