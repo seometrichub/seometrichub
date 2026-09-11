@@ -48,8 +48,16 @@ type SearchConsoleData = {
   queries: SearchConsoleQuery[];
 };
 
+type AuditQuota = {
+  used: number;
+  limit: number;
+  remaining: number;
+  periodEnd?: string;
+};
+
 type AuditResult = {
   success: boolean;
+  quota?: AuditQuota;
   score: number;
 
   website: {
@@ -93,38 +101,28 @@ type AuditResult = {
   details: {
     title: string;
     titleLength: number;
-
     description: string;
     descriptionLength: number;
-
     h1Count: number;
     h2Count: number;
-
     wordCount: number;
-
     totalImages: number;
     imagesWithAlt: number;
     imagesWithoutAlt: number;
-
     missingAltImages: {
       src: string;
       alt: string | null;
       recommendedAlt: string;
     }[];
-
     internalLinks: number;
     externalLinks: number;
-
     canonical: string | null;
-
     https: boolean;
     mobileViewport: boolean;
-
     robotsMeta: string | null;
     robotsTxt: boolean;
     sitemap: boolean;
     favicon: boolean;
-
     language: string | null;
   };
 };
@@ -145,6 +143,7 @@ function AuditPageContent() {
   const [error, setError] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [audit, setAudit] = useState<AuditResult | null>(null);
+  const [quota, setQuota] = useState<AuditQuota | null>(null);
 const [searchConsole, setSearchConsole] =
   useState<SearchConsoleData | null>(null);
 
@@ -231,6 +230,7 @@ const loadSearchConsole = async (siteUrl: string) => {
 
     setError("");
     setAudit(null);
+    setQuota(null);
 
     if (!url.trim()) {
       setError("Please enter your website URL.");
@@ -272,18 +272,21 @@ const loadSearchConsole = async (siteUrl: string) => {
 
       const data = await response.json();
 
-      if (!response.ok || !data?.success) {
-        throw new Error(
-          data?.error || "Unable to analyze this website."
-        );
+      if (data?.quota) {
+        setQuota(data.quota as AuditQuota);
       }
 
-     
-setUrl(websiteUrl);
-setAudit(data as AuditResult);
-if (searchParams.get("gsc") !== "access_denied") {
-    loadSearchConsole(websiteUrl);
-  }
+      if (!response.ok || !data?.success) {
+        setError(data?.error || "Unable to analyze this website.");
+        return;
+      }
+
+      setUrl(websiteUrl);
+      setAudit(data as AuditResult);
+
+      if (searchParams.get("gsc") !== "access_denied") {
+        loadSearchConsole(websiteUrl);
+      }
 
 
     } catch (err) {
@@ -381,6 +384,75 @@ if (searchParams.get("gsc") !== "access_denied") {
           </form>
         </div>
       </section>
+
+      {/* MONTHLY USAGE */}
+      {quota && (
+        <section className="px-5 pb-10 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl">
+            <div className="rounded-3xl border border-orange-200 bg-orange-50 p-6 shadow-sm sm:p-7">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-wider text-orange-600">
+                    Monthly Usage
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black text-[#0F172A]">
+                    Website Audits
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-[#94A3B8]">
+                      Used
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-[#0F172A]">
+                      {quota.used}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-[#94A3B8]">
+                      Limit
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-[#0F172A]">
+                      {quota.limit}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-[#94A3B8]">
+                      Remaining
+                    </p>
+                    <p className="mt-1 text-2xl font-black text-[#0F172A]">
+                      {quota.remaining}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 h-3 overflow-hidden rounded-full bg-orange-100">
+                <div
+                  className="h-full rounded-full bg-[#F97316] transition-all duration-500"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0
+                    )}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-sm font-semibold text-[#9A3412]">
+                {quota.remaining > 0
+                  ? `${quota.remaining} website audit${
+                      quota.remaining === 1 ? "" : "s"
+                    } remaining this month.`
+                  : "Monthly website audit limit reached."}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* WHAT WE CHECK */}
       <section className="px-5 pb-24 sm:px-6 lg:px-8">

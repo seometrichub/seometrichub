@@ -119,7 +119,60 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+// ============================================================
+// CHECK QUOTA ONLY - DO NOT INCREMENT YET
+// ============================================================
 
+const { data: quotaCheckRows, error: quotaCheckError } =
+  await supabase.rpc("get_tool_usage", {
+    p_user_id: user.id,
+    p_tool: "website_audit",
+  });
+
+if (quotaCheckError) {
+  console.error("Website audit quota check failed:", {
+    message: quotaCheckError.message,
+    code: quotaCheckError.code,
+  });
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to verify your audit usage limit.",
+    },
+    { status: 500 },
+  );
+}
+
+const quotaCheck = Array.isArray(quotaCheckRows)
+  ? quotaCheckRows[0]
+  : null;
+
+if (!quotaCheck) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to verify your audit usage limit.",
+    },
+    { status: 500 },
+  );
+}
+
+if (!quotaCheck.allowed) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Monthly website audit limit reached.",
+      quota: {
+        used: quotaCheck.used,
+        limit: quotaCheck.limit_value,
+        remaining: quotaCheck.remaining,
+        periodEnd: quotaCheck.period_end,
+      },
+    },
+    { status: 429 },
+  );
+}
     const response = await fetchWithTimeout(
       parsedUrl.toString(),
       {
@@ -178,57 +231,7 @@ export async function POST(request: Request) {
 
     const html = await response.text();
 
-    const { data: quotaRows, error: quotaError } = await supabase.rpc(
-      "consume_tool_usage",
-      {
-        p_user_id: user.id,
-        p_tool: "website_audit",
-      },
-    );
-
-    if (quotaError) {
-      console.error("Website audit quota check failed:", {
-        message: quotaError.message,
-        code: quotaError.code,
-      });
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unable to verify your audit usage limit.",
-        },
-        { status: 500 },
-      );
-    }
-
-    const quota = Array.isArray(quotaRows) ? quotaRows[0] : null;
-
-    if (!quota) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unable to verify your audit usage limit.",
-        },
-        { status: 500 },
-      );
-    }
-
-    if (!quota.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Monthly website audit limit reached.",
-          quota: {
-            used: quota.used,
-            limit: quota.limit_value,
-            remaining: quota.remaining,
-            periodEnd: quota.period_end,
-          },
-        },
-        { status: 429 },
-      );
-    }
-
+   
     const htmlSizeKB = Number(
       (Buffer.byteLength(html, "utf8") / 1024).toFixed(1),
     );
@@ -448,25 +451,103 @@ seoOpportunitiesScore = clampScore(seoOpportunitiesScore);
       hostname: finalParsedUrl.hostname,
       language,
     });
+// ============================================================
+// CONSUME QUOTA ONLY AFTER SUCCESSFUL AUDIT
+// ============================================================
 
-    return NextResponse.json({
-      success: true,
-      website: {
-        url: finalUrl,
-        hostname: finalParsedUrl.hostname,
-        statusCode: response.status,
-        responseTime,
-        htmlSizeKB,
+const { data: quotaRows, error: quotaError } = await supabase.rpc(
+  "consume_tool_usage",
+  {
+    p_user_id: user.id,
+    p_tool: "website_audit",
+  },
+);
+
+if (quotaError) {
+  console.error("Website audit quota consume failed:", {
+    message: quotaError.message,
+    code: quotaError.code,
+  });
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to update your audit usage.",
+    },
+    { status: 500 },
+  );
+}
+
+const quota = Array.isArray(quotaRows) ? quotaRows[0] : null;
+
+if (!quota) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to update your audit usage.",
+    },
+    { status: 500 },
+  );
+}
+
+if (!quota.allowed) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Monthly website audit limit reached.",
+      quota: {
+        used: quota.used,
+        limit: quota.limit_value,
+        remaining: quota.remaining,
+        periodEnd: quota.period_end,
       },
-      score: overallScore,
-      results: {
-        technicalSeo: { score: technicalSeoScore, status: getStatus(technicalSeoScore) },
-        pagePerformance: { score: pagePerformanceScore, status: getStatus(pagePerformanceScore) },
-        metaTags: { score: metaScore, status: getStatus(metaScore) },
-        mobileOptimization: { score: mobileScore, status: getStatus(mobileScore) },
-        contentQuality: { score: contentScore, status: getStatus(contentScore) },
-        seoOpportunities: { score: seoOpportunitiesScore, status: getStatus(seoOpportunitiesScore) },
-      },
+    },
+    { status: 429 },
+  );
+}
+
+return NextResponse.json({
+  success: true,
+  quota: {
+    used: quota.used,
+    limit: quota.limit_value,
+    remaining: quota.remaining,
+    periodEnd: quota.period_end,
+  },
+  website: {
+    url: finalUrl,
+    hostname: finalParsedUrl.hostname,
+    statusCode: response.status,
+    responseTime,
+    htmlSizeKB,
+  },
+  score: overallScore,
+  results: {
+    technicalSeo: {
+      score: technicalSeoScore,
+      status: getStatus(technicalSeoScore),
+    },
+    pagePerformance: {
+      score: pagePerformanceScore,
+      status: getStatus(pagePerformanceScore),
+    },
+    metaTags: {
+      score: metaScore,
+      status: getStatus(metaScore),
+    },
+    mobileOptimization: {
+      score: mobileScore,
+      status: getStatus(mobileScore),
+    },
+    contentQuality: {
+      score: contentScore,
+      status: getStatus(contentScore),
+    },
+    seoOpportunities: {
+      score: seoOpportunitiesScore,
+      status: getStatus(seoOpportunitiesScore),
+    },
+  },
       backlinks: backlinkData,
       details: {
         title,
