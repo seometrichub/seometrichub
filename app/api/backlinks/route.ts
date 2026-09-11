@@ -273,24 +273,33 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      success: true,
-      url: finalUrl.toString(),
-      domain: finalUrl.hostname.replace(/^www\./i, ""),
-      backlinkProfileAvailable: false,
-      backlinkMessage:
-        "True backlink counts require an external backlink index. SEOMETRICHUB is showing real on-page link analysis without estimating backlink data.",
-      linkAnalysis: {
-        totalLinks: internalLinks + externalLinks,
-        internalLinks,
-        externalLinks,
-        uniqueExternalDomains: externalDomains.size,
-        followExternalLinks: followLinks,
-        nofollowExternalLinks: nofollowLinks,
-      },
-      externalDomains: Array.from(externalDomains)
-        .sort()
-        .slice(0, 100),
-    });
+  success: true,
+  url: finalUrl.toString(),
+  domain: finalUrl.hostname.replace(/^www\./i, ""),
+  backlinkProfileAvailable: false,
+  backlinkMessage:
+    "True backlink counts require an external backlink index. SEOMETRICHUB is showing real on-page link analysis without estimating backlink data.",
+
+  quota: {
+    used: quota.used,
+    limit: quota.limit_value,
+    remaining: quota.remaining,
+    periodEnd: quota.period_end,
+  },
+
+  linkAnalysis: {
+    totalLinks: internalLinks + externalLinks,
+    internalLinks,
+    externalLinks,
+    uniqueExternalDomains: externalDomains.size,
+    followExternalLinks: followLinks,
+    nofollowExternalLinks: nofollowLinks,
+  },
+
+ externalDomains: Array.from(externalDomains)
+  .sort()
+  .slice(0, 100),
+});
   } catch (error) {
     console.error("Backlink analysis error:", error);
 

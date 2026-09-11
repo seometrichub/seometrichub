@@ -1,5 +1,4 @@
 "use client";
-
 import { FormEvent, useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
@@ -33,6 +32,12 @@ type AnalysisResponse = {
   yourSite?: PageAnalysis;
   competitors?: PageAnalysis[];
   recommendations?: string[];
+  quota?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    periodEnd?: string;
+  };
   note?: string;
   error?: string;
   failures?: Array<{
@@ -81,6 +86,7 @@ export default function CompetitorAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const [quota, setQuota] = useState<AnalysisResponse["quota"]>(undefined);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,6 +94,7 @@ export default function CompetitorAnalysisPage() {
     setLoading(true);
     setError("");
     setResult(null);
+    setQuota(undefined);
 
     try {
       const response = await fetch("/api/competitor-analysis", {
@@ -103,6 +110,9 @@ export default function CompetitorAnalysisPage() {
       });
 
       const data = (await response.json()) as AnalysisResponse;
+      if (data.quota) {
+        setQuota(data.quota);
+      }
 
       if (!response.ok || !data.success) {
         let message =
@@ -262,9 +272,89 @@ export default function CompetitorAnalysisPage() {
           )}
         </div>
 
-        {result?.success && websites.length > 0 && (
-          <div className="mt-10 space-y-8">
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      
+          {/* MONTHLY USAGE */}
+          {quota && (
+            <div className="mt-10 rounded-3xl border border-violet-200 bg-violet-50 p-6 sm:p-8">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
+                    Monthly Usage
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">
+                    Competitor Analysis Usage
+                  </h2>
+
+                  <p className="mt-2 text-sm text-slate-600">
+                    Your monthly plan usage for competitor analysis.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                    <p className="text-2xl font-black text-slate-950">
+                      {quota.used}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      Used
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                    <p className="text-2xl font-black text-slate-950">
+                      {quota.limit}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      Limit
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                    <p className="text-2xl font-black text-violet-700">
+                      {quota.remaining}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      Remaining
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 h-3 overflow-hidden rounded-full bg-violet-100">
+                <div
+                  className="h-full rounded-full bg-violet-600 transition-all"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (quota.used / Math.max(quota.limit, 1)) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+
+              {quota.remaining > 0 ? (
+                <p className="mt-3 text-xs font-semibold text-slate-500">
+                  {quota.remaining} analyses remaining this month
+                </p>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-sm font-black text-amber-900">
+                    Monthly limit reached
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-amber-800">
+                    You have used all competitor analyses included in your current plan.
+                    Upgrade your plan or wait until your monthly usage resets.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {result?.success && websites.length > 0 && (
+            <div className="mt-10 space-y-8">
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {websites.map((website) => (
                 <article
                   key={`${website.label}-${website.data.finalUrl}`}

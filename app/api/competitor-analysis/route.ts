@@ -594,14 +594,21 @@ export async function POST(request: Request) {
       competitors
     );
 
-    return NextResponse.json({
-      success: true,
-      yourSite,
-      competitors,
-      recommendations,
-      note:
-        "This comparison uses directly observable on-page and technical website signals. It does not estimate traffic, domain authority, keyword rankings, or backlink index metrics.",
-    });
+   return NextResponse.json({
+  success: true,
+  yourSite,
+  competitors,
+  recommendations,
+  quota: {
+    used: quota.used,
+    limit: quota.limit_value,
+    remaining: quota.remaining,
+    periodEnd: quota.period_end,
+  },
+  note:
+    "This comparison uses directly observable on-page and technical website signals. It does not estimate traffic, domain authority, keyword rankings, or backlink index metrics.",
+});
+    
   } catch (error) {
     console.error("Competitor analysis API error:", error);
 

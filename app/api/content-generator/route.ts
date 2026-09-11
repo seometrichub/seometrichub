@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 type ContentRequest = {
   topic?: string;
@@ -22,10 +23,28 @@ type GeminiResponse = {
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please sign in to use content generation.",
+        },
+        { status: 401 },
+      );
+    }
+
     const body = (await request.json()) as ContentRequest;
 
     const topic = body.topic?.trim();
-    const contentType = body.contentType?.trim() || "Blog Article";
+    const contentType =
+      body.contentType?.trim() || "Blog Article";
     const tone = body.tone?.trim() || "Professional";
     const keywords = body.keywords?.trim() || "";
 
@@ -35,7 +54,17 @@ export async function POST(request: Request) {
           success: false,
           error: "Topic is required.",
         },
-        { status: 400 }
+        { status: 400 },
+      );
+    }
+
+    if (topic.length > 200) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Topic must be 200 characters or less.",
+        },
+        { status: 400 },
       );
     }
 
@@ -49,11 +78,71 @@ export async function POST(request: Request) {
           error:
             "Gemini API is not configured. Add GEMINI_API_KEY to enable content generation.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
+    // ============================================================
+    // CHECK QUOTA ONLY - DO NOT INCREMENT YET
+    // ============================================================
+
+    const { data: quotaCheckRows, error: quotaCheckError } =
+      await supabase.rpc("get_tool_usage", {
+        p_user_id: user.id,
+        p_tool: "ai_article",
+      });
+
+    if (quotaCheckError) {
+      console.error("Content generator quota check failed:", {
+        message: quotaCheckError.message,
+        code: quotaCheckError.code,
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to verify your content generation usage limit.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const quotaCheck = Array.isArray(quotaCheckRows)
+      ? quotaCheckRows[0]
+      : null;
+
+    if (!quotaCheck) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unable to verify your content generation usage limit.",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!quotaCheck.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Monthly content generation limit reached.",
+          quota: {
+            used: quotaCheck.used,
+            limit: quotaCheck.limit_value,
+            remaining: quotaCheck.remaining,
+            periodEnd: quotaCheck.period_end,
+          },
+        },
+        { status: 429 },
+      );
+    }
+
+    // ============================================================
+    // GENERATE CONTENT
+    // ============================================================
+
     const prompt = `
+    
 You are an expert SEO content writer for SEOMETRICHUB.
 
 Create original, accurate, useful, human-readable SEO content based ONLY on the user's requested topic, content type, tone, and target keywords.
@@ -127,7 +216,7 @@ Then return the polished final content.
           },
         }),
         cache: "no-store",
-      }
+      },
     );
 
     const data = (await response.json()) as GeminiResponse;
@@ -135,7 +224,7 @@ Then return the polished final content.
     if (!response.ok) {
       console.error(
         "Gemini content generator error:",
-        data?.error?.message || response.status
+        data?.error?.message || response.status,
       );
 
       return NextResponse.json(
@@ -145,8 +234,14 @@ Then return the polished final content.
           error:
             data?.error?.message ||
             `Gemini API returned HTTP ${response.status}.`,
+          quota: {
+            used: quotaCheck.used,
+            limit: quotaCheck.limit_value,
+            remaining: quotaCheck.remaining,
+            periodEnd: quotaCheck.period_end,
+          },
         },
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -162,8 +257,71 @@ Then return the polished final content.
           success: false,
           providerConfigured: true,
           error: "Gemini returned an empty response.",
+          quota: {
+            used: quotaCheck.used,
+            limit: quotaCheck.limit_value,
+            remaining: quotaCheck.remaining,
+            periodEnd: quotaCheck.period_end,
+          },
         },
-        { status: 502 }
+        { status: 502 },
+      );
+    }
+
+    // ============================================================
+    // SUCCESS - NOW CONSUME ONE QUOTA
+    // ============================================================
+
+    const { data: quotaConsumeRows, error: quotaConsumeError } =
+      await supabase.rpc("consume_tool_usage", {
+        p_user_id: user.id,
+        p_tool: "ai_article",
+      });
+
+    if (quotaConsumeError) {
+      console.error("Content generator quota consume failed:", {
+        message: quotaConsumeError.message,
+        code: quotaConsumeError.code,
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Content was generated, but usage could not be recorded. Please try again.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const quota = Array.isArray(quotaConsumeRows)
+      ? quotaConsumeRows[0]
+      : null;
+
+    if (!quota) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Content was generated, but usage could not be recorded. Please try again.",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Monthly content generation limit reached.",
+          quota: {
+            used: quota.used,
+            limit: quota.limit_value,
+            remaining: quota.remaining,
+            periodEnd: quota.period_end,
+          },
+        },
+        { status: 429 },
       );
     }
 
@@ -171,6 +329,12 @@ Then return the polished final content.
       success: true,
       providerConfigured: true,
       content,
+      quota: {
+        used: quota.used,
+        limit: quota.limit_value,
+        remaining: quota.remaining,
+        periodEnd: quota.period_end,
+      },
     });
   } catch (error) {
     console.error("Content generator API error:", error);
@@ -180,7 +344,7 @@ Then return the polished final content.
         success: false,
         error: "Unable to generate content.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

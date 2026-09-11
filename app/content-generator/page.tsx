@@ -10,6 +10,12 @@ type GeneratorResponse = {
   content?: string;
   error?: string;
   providerConfigured?: boolean;
+  quota?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    periodEnd?: string;
+  };
 };
 
 export default function ContentGeneratorPage() {
@@ -21,6 +27,8 @@ export default function ContentGeneratorPage() {
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [quota, setQuota] =
+    useState<GeneratorResponse["quota"]>(undefined);
 
   const wordCount = result.trim()
     ? result.trim().split(/\s+/).length
@@ -38,6 +46,7 @@ export default function ContentGeneratorPage() {
     setError("");
     setResult("");
     setCopied(false);
+    setQuota(undefined);
 
     try {
       const response = await fetch("/api/content-generator", {
@@ -54,6 +63,10 @@ export default function ContentGeneratorPage() {
       });
 
       const data: GeneratorResponse = await response.json();
+
+      if (data.quota) {
+        setQuota(data.quota);
+      }
 
       if (!response.ok || !data.success) {
         setError(data.error || "Unable to generate content.");
@@ -105,6 +118,89 @@ export default function ContentGeneratorPage() {
           </p>
         </div>
       </section>
+
+      {quota && (
+        <section className="mx-auto max-w-5xl px-5 pt-8 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-orange-200 bg-orange-50 p-6 sm:p-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">
+                  Monthly Usage
+                </p>
+
+                <h2 className="mt-2 text-2xl font-black text-slate-950">
+                  Content Generation Usage
+                </h2>
+
+                <p className="mt-2 text-sm text-slate-600">
+                  Your monthly plan usage for AI content generation.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                  <p className="text-2xl font-black text-slate-950">
+                    {quota.used}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    Used
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                  <p className="text-2xl font-black text-slate-950">
+                    {quota.limit}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    Limit
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                  <p className="text-2xl font-black text-[#F97316]">
+                    {quota.remaining}
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">
+                    Remaining
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 h-3 overflow-hidden rounded-full bg-orange-100">
+              <div
+                className="h-full rounded-full bg-[#F97316] transition-all"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (quota.used / Math.max(quota.limit, 1)) * 100,
+                  )}%`,
+                }}
+              />
+            </div>
+
+            {quota.remaining > 0 ? (
+              <p className="mt-3 text-xs font-semibold text-slate-500">
+                {quota.remaining === 1
+                  ? "1 content generation remaining this month"
+                  : `${quota.remaining} content generations remaining this month`}
+              </p>
+            ) : (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-black text-amber-900">
+                  Monthly limit reached
+                </p>
+
+                <p className="mt-1 text-sm leading-6 text-amber-800">
+                  You have used all content generations included in your current
+                  plan. Upgrade your plan or wait until your monthly usage
+                  resets.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-6 lg:grid-cols-[420px_1fr] lg:px-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">

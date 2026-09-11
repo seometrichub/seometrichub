@@ -27,6 +27,12 @@ type KeywordResponse = {
   keywords: KeywordItem[];
   relatedKeywords: KeywordItem[];
   longTailKeywords: KeywordItem[];
+  quota?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    periodEnd?: string;
+  };
   note?: string;
 };
 
@@ -91,6 +97,8 @@ export default function KeywordsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [quota, setQuota] =
+    useState<KeywordResponse["quota"]>(undefined);
 
   const activeKeywords = useMemo(() => {
     if (!results) {
@@ -133,6 +141,7 @@ export default function KeywordsPage() {
     setLoading(true);
     setError("");
     setResults(null);
+    setQuota(undefined);
     setSearch("");
     setActiveTab("all");
 
@@ -149,15 +158,22 @@ export default function KeywordsPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as KeywordResponse & {
+        error?: string;
+      };
 
-      if (!response.ok) {
-        throw new Error(
-          data?.error || "Unable to complete keyword research.",
-        );
+      if (data.quota) {
+        setQuota(data.quota);
       }
 
-      setResults(data as KeywordResponse);
+      if (!response.ok) {
+        setError(
+          data.error || "Unable to complete keyword research.",
+        );
+        return;
+      }
+
+      setResults(data);
     } catch (err) {
       console.error("Keyword research failed:", err);
 
@@ -285,6 +301,72 @@ export default function KeywordsPage() {
           )}
         </div>
       </section>
+
+      {/* Monthly Usage */}
+      {quota && (
+        <section className="mx-auto max-w-5xl px-5 pt-8 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-orange-200 bg-orange-50 p-6 sm:p-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-orange-700">
+                  Monthly Usage
+                </p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950">
+                  Keyword Research Usage
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Your monthly plan usage for keyword research.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                  <p className="text-2xl font-black text-slate-950">{quota.used}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">Used</p>
+                </div>
+                <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                  <p className="text-2xl font-black text-slate-950">{quota.limit}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">Limit</p>
+                </div>
+                <div className="rounded-2xl bg-white px-5 py-4 text-center shadow-sm">
+                  <p className="text-2xl font-black text-[#F97316]">{quota.remaining}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">Remaining</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 h-3 overflow-hidden rounded-full bg-orange-100">
+              <div
+                className="h-full rounded-full bg-[#F97316] transition-all"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (quota.used / Math.max(quota.limit, 1)) * 100,
+                  )}%`,
+                }}
+              />
+            </div>
+
+            {quota.remaining > 0 ? (
+              <p className="mt-3 text-xs font-semibold text-slate-500">
+                {quota.remaining === 1
+                  ? "1 search remaining this month"
+                  : `${quota.remaining} searches remaining this month`}
+              </p>
+            ) : (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-black text-amber-900">
+                  Monthly limit reached
+                </p>
+                <p className="mt-1 text-sm leading-6 text-amber-800">
+                  You have used all keyword searches included in your current
+                  plan. Upgrade your plan or wait until your monthly usage resets.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Results */}
       {results && (
