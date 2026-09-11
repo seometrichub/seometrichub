@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 type KeywordResult = {
   rank: number;
@@ -609,12 +610,29 @@ const baseKeyword = cleanKeyword(seedKeyword);
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          error: "Please sign in to use keyword research.",
+        },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
 
     const keyword =
       typeof body.keyword === "string"
         ? body.keyword.trim()
         : "";
+
 
     const location =
       typeof body.location === "string" &&
@@ -647,6 +665,54 @@ export async function POST(request: Request) {
         {
           status: 400,
         },
+      );
+    }
+
+    const { data: quotaRows, error: quotaError } = await supabase.rpc(
+      "consume_tool_usage",
+      {
+        p_user_id: user.id,
+        p_tool: "keyword_search",
+      },
+    );
+
+    if (quotaError) {
+      console.error("Keyword quota check failed:", {
+        message: quotaError.message,
+        code: quotaError.code,
+      });
+
+      return NextResponse.json(
+        {
+          error: "Unable to verify your keyword usage limit.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const quota = Array.isArray(quotaRows) ? quotaRows[0] : null;
+
+    if (!quota) {
+      return NextResponse.json(
+        {
+          error: "Unable to verify your keyword usage limit.",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: "Monthly keyword search limit reached.",
+          quota: {
+            used: quota.used,
+            limit: quota.limit_value,
+            remaining: quota.remaining,
+            periodEnd: quota.period_end,
+          },
+        },
+        { status: 429 },
       );
     }
 
