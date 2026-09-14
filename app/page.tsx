@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
+import PaymentStatus from "@/components/PaymentStatus";
 import Hero from "@/components/sections/Hero";
 import Stats from "@/components/sections/Stats";
 import Features from "@/components/sections/Features";
@@ -10,10 +12,15 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-[#0F172A]">
       {/* NAVBAR */}
-      <Navbar />
+<Navbar />
 
-      {/* HERO */}
-      <Hero />
+{/* PAYMENT STATUS */}
+<Suspense fallback={null}>
+  <PaymentStatus />
+</Suspense>
+
+{/* HERO */}
+<Hero />
 
       {/* STATS */}
       <Stats />
