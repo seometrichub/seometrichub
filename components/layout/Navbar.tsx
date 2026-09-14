@@ -117,7 +117,12 @@ export default function Navbar() {
               >
                 {user.email ?? "Signed in"}
               </span>
-
+<a
+  href="/dashboard"
+  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#0F172A] transition-colors hover:text-[#F97316]"
+>
+  Dashboard
+</a>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -234,6 +239,13 @@ export default function Navbar() {
 
               {user ? (
                 <div className="mt-4 rounded-lg border border-slate-200 p-3">
+                  <a
+  href="/dashboard"
+  onClick={() => setMenuOpen(false)}
+  className="mb-3 block rounded-lg bg-[#0F172A] px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-[#F97316]"
+>
+  Dashboard
+</a>
                   <p
                     className="truncate text-center text-sm font-semibold text-slate-600"
                     title={user.email ?? "Signed in"}
@@ -248,7 +260,14 @@ export default function Navbar() {
                   >
                     Log Out
                   </button>
+                  <a
+  href="/dashboard"
+  className="rounded-lg px-3 py-2.5 text-sm font-semibold text-[#0F172A] transition-colors hover:text-[#F97316]"
+>
+  Dashboard
+</a>
                 </div>
+                
               ) : (
                 <a
                   href="/login"
