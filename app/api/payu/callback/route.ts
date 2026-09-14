@@ -727,13 +727,32 @@ export async function POST(request: Request) {
     // ============================================================
 
     const now = new Date();
-    const periodEnd = new Date(now);
 
-    periodEnd.setUTCMonth(
-      periodEnd.getUTCMonth() +
-        durationMonths,
-    );
+const originalDay = now.getUTCDate();
 
+const periodEnd = new Date(
+  Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth() + durationMonths,
+    1,
+    now.getUTCHours(),
+    now.getUTCMinutes(),
+    now.getUTCSeconds(),
+    now.getUTCMilliseconds(),
+  ),
+);
+
+const lastDayOfTargetMonth = new Date(
+  Date.UTC(
+    periodEnd.getUTCFullYear(),
+    periodEnd.getUTCMonth() + 1,
+    0,
+  ),
+).getUTCDate();
+
+periodEnd.setUTCDate(
+  Math.min(originalDay, lastDayOfTargetMonth),
+);
     // ============================================================
     // UPDATE USER SUBSCRIPTION
     // ============================================================
