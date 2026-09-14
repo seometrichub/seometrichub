@@ -53,6 +53,8 @@ export default async function DashboardPage() {
     },
   );
 
+  const now = new Date();
+
   // ============================================================
   // SUBSCRIPTION
   // ============================================================
@@ -85,46 +87,110 @@ export default async function DashboardPage() {
   }
 
   // ============================================================
-  // PLAN
+  // SUBSCRIBED PLAN
   // ============================================================
 
-  let plan = null;
+  const planSelect = `
+    id,
+    code,
+    name,
+    price_inr,
+    duration_months,
+    website_audits_limit,
+    keyword_searches_limit,
+    backlink_analysis_limit,
+    competitor_analysis_limit,
+    ai_articles_limit,
+    social_generations_limit,
+    gsc_access,
+    reports_history,
+    is_active
+  `;
+
+  let subscribedPlan = null;
 
   if (subscription?.plan_id) {
     const { data, error } = await supabaseAdmin
       .from("plans")
-      .select(
-        `
-          id,
-          code,
-          name,
-          price_inr,
-          duration_months,
-          website_audits_limit,
-          keyword_searches_limit,
-          backlink_analysis_limit,
-          competitor_analysis_limit,
-          ai_articles_limit,
-          social_generations_limit,
-          gsc_access,
-          reports_history
-        `,
-      )
+      .select(planSelect)
       .eq("id", subscription.plan_id)
       .maybeSingle();
 
     if (error) {
-      console.error("Dashboard plan lookup failed:", error);
+      console.error(
+        "Dashboard subscribed plan lookup failed:",
+        error,
+      );
     }
 
-    plan = data;
+    subscribedPlan = data;
+  }
+
+  // ============================================================
+  // SUBSCRIPTION EXPIRY CHECK
+  // ============================================================
+
+  const subscriptionEndTime = subscription?.subscription_end
+    ? new Date(subscription.subscription_end).getTime()
+    : null;
+
+  const isFreeSubscription =
+    subscribedPlan?.code === "free";
+
+  const isValidPaidSubscription =
+    Boolean(
+      subscription &&
+        subscribedPlan &&
+        subscribedPlan.code !== "free" &&
+        subscription.status === "active" &&
+        subscribedPlan.is_active === true &&
+        subscriptionEndTime !== null &&
+        subscriptionEndTime > now.getTime(),
+    );
+
+  const isValidFreeSubscription =
+    Boolean(
+      subscription &&
+        subscribedPlan &&
+        subscribedPlan.code === "free" &&
+        subscription.status === "active" &&
+        subscribedPlan.is_active === true,
+    );
+
+  const useSubscribedPlan =
+    isValidPaidSubscription || isValidFreeSubscription;
+
+  // ============================================================
+  // EFFECTIVE PLAN
+  //
+  // Valid subscription -> subscribed plan
+  // Expired / invalid / missing subscription -> Free plan
+  // ============================================================
+
+  let plan = useSubscribedPlan ? subscribedPlan : null;
+
+  if (!plan) {
+    const { data: freePlan, error: freePlanError } =
+      await supabaseAdmin
+        .from("plans")
+        .select(planSelect)
+        .eq("code", "free")
+        .eq("is_active", true)
+        .maybeSingle();
+
+    if (freePlanError) {
+      console.error(
+        "Dashboard Free plan lookup failed:",
+        freePlanError,
+      );
+    }
+
+    plan = freePlan;
   }
 
   // ============================================================
   // CURRENT MONTH USAGE
   // ============================================================
-
-  const now = new Date();
 
   const currentPeriodStart =
     `${now.getUTCFullYear()}-` +
@@ -162,7 +228,9 @@ export default async function DashboardPage() {
   // HELPERS
   // ============================================================
 
-  const formatDate = (value: string | null | undefined) => {
+  const formatDate = (
+    value: string | null | undefined,
+  ) => {
     if (!value) {
       return "No expiry";
     }
@@ -174,22 +242,31 @@ export default async function DashboardPage() {
     }).format(new Date(value));
   };
 
-  const currentMonthName = new Intl.DateTimeFormat("en-IN", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(now);
+  const currentMonthName =
+    new Intl.DateTimeFormat("en-IN", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(now);
 
   const planName = plan?.name ?? "Free";
   const planCode = plan?.code ?? "free";
-  const status = subscription?.status ?? "active";
-
-  const validUntil =
-    subscription?.subscription_end ??
-    subscription?.current_period_end ??
-    null;
 
   const isFree = planCode === "free";
+
+  const effectiveStatus = isFree
+    ? "active"
+    : subscription?.status ?? "active";
+
+  const validUntil = isFree
+    ? null
+    : subscription?.subscription_end ??
+      subscription?.current_period_end ??
+      null;
+
+  const paymentProvider = isFree
+    ? "Free"
+    : subscription?.payment_provider ?? "Paid";
 
   // ============================================================
   // USAGE DATA
@@ -227,11 +304,19 @@ export default async function DashboardPage() {
       limit: plan?.social_generations_limit ?? 0,
     },
   ].map((item) => {
-    const remaining = Math.max(item.limit - item.used, 0);
+    const remaining = Math.max(
+      item.limit - item.used,
+      0,
+    );
 
     const percentage =
       item.limit > 0
-        ? Math.min(Math.round((item.used / item.limit) * 100), 100)
+        ? Math.min(
+            Math.round(
+              (item.used / item.limit) * 100,
+            ),
+            100,
+          )
         : 0;
 
     return {
@@ -286,7 +371,7 @@ export default async function DashboardPage() {
                     </h2>
 
                     <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-300">
-                      {status}
+                      {effectiveStatus}
                     </span>
                   </div>
 
@@ -326,7 +411,7 @@ export default async function DashboardPage() {
                 </p>
 
                 <p className="mt-2 font-bold capitalize text-emerald-600">
-                  {status}
+                  {effectiveStatus}
                 </p>
               </div>
 
@@ -349,7 +434,7 @@ export default async function DashboardPage() {
                 </p>
 
                 <p className="mt-2 font-bold capitalize text-slate-950">
-                  {subscription?.payment_provider ?? "Free"}
+                  {paymentProvider}
                 </p>
               </div>
             </div>
@@ -363,7 +448,8 @@ export default async function DashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-600">
-                {currentMonthName} usage for your {planName} plan.
+                {currentMonthName} usage for your{" "}
+                {planName} plan.
               </p>
             </div>
 
