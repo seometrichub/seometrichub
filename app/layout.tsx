@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://seometrichub.com"),
+  metadataBase: new URL("https://www.seometrichub.com"),
 
   title: {
     default: "SEOMETRICHUB – AI SEO & Digital Marketing Tools",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://seometrichub.com",
+    url: "https://www.seometrichub.com",
     siteName: "SEOMETRICHUB",
     title: "SEOMETRICHUB – AI SEO & Digital Marketing Tools",
     description:
