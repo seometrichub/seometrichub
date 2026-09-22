@@ -2,6 +2,7 @@
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { jsPDF } from "jspdf";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/sections/Footer";
 
@@ -301,7 +302,570 @@ const loadSearchConsole = async (siteUrl: string) => {
       setAnalyzing(false);
     }
   };
+  const downloadPdfReport = () => {
+    if (!audit) return;
 
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const margin = 16;
+    const contentWidth = pageWidth - margin * 2;
+
+    let y = 18;
+    let pageNumber = 1;
+
+    const safeText = (
+      value: string | number | null | undefined
+    ): string => {
+      if (value === null || value === undefined || value === "") {
+        return "Not available";
+      }
+
+      return String(value);
+    };
+
+    const addFooter = () => {
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(
+        margin,
+        pageHeight - 14,
+        pageWidth - margin,
+        pageHeight - 14
+      );
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 116, 139);
+
+      pdf.text(
+        "SEOMETRICHUB SEO Audit Report",
+        margin,
+        pageHeight - 8
+      );
+
+      pdf.text(
+        `Page ${pageNumber}`,
+        pageWidth - margin,
+        pageHeight - 8,
+        {
+          align: "right",
+        }
+      );
+    };
+
+    const newPage = () => {
+      addFooter();
+
+      pdf.addPage();
+
+      pageNumber += 1;
+      y = 18;
+    };
+
+    const ensureSpace = (height: number) => {
+      if (y + height > pageHeight - 22) {
+        newPage();
+      }
+    };
+
+    const addSectionTitle = (title: string) => {
+      ensureSpace(14);
+
+      y += 3;
+
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(
+        margin,
+        y,
+        contentWidth,
+        10,
+        2,
+        2,
+        "F"
+      );
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.setTextColor(15, 23, 42);
+
+      pdf.text(title, margin + 4, y + 6.5);
+
+      y += 15;
+    };
+
+    const addRow = (
+      label: string,
+      value: string | number | null | undefined
+    ) => {
+      ensureSpace(10);
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(71, 85, 105);
+
+      pdf.text(label, margin, y);
+
+      const valueText = safeText(value);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(15, 23, 42);
+
+      const wrappedValue = pdf.splitTextToSize(
+        valueText,
+        contentWidth - 58
+      );
+
+      pdf.text(wrappedValue, margin + 58, y);
+
+      const lineHeight = Math.max(
+        7,
+        wrappedValue.length * 4.5
+      );
+
+      y += lineHeight;
+    };
+
+    const addParagraph = (text: string) => {
+      const lines = pdf.splitTextToSize(
+        safeText(text),
+        contentWidth
+      );
+
+      ensureSpace(lines.length * 5 + 4);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(71, 85, 105);
+
+      pdf.text(lines, margin, y);
+
+      y += lines.length * 5 + 4;
+    };
+
+    // ============================================================
+    // HEADER
+    // ============================================================
+
+    pdf.setFillColor(15, 23, 42);
+    pdf.rect(0, 0, pageWidth, 48, "F");
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(22);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text("SEOMETRICHUB", margin, 18);
+
+    pdf.setFontSize(15);
+    pdf.text("SEO Audit Report", margin, 29);
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(203, 213, 225);
+
+    const reportDate = new Date().toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    pdf.text(`Generated: ${reportDate}`, margin, 39);
+
+    y = 60;
+
+    // ============================================================
+    // WEBSITE
+    // ============================================================
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+    pdf.setTextColor(249, 115, 22);
+    pdf.text("AUDITED WEBSITE", margin, y);
+
+    y += 7;
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(14);
+    pdf.setTextColor(15, 23, 42);
+
+    const websiteLines = pdf.splitTextToSize(
+      audit.website.url,
+      contentWidth
+    );
+
+    pdf.text(websiteLines, margin, y);
+
+    y += websiteLines.length * 6 + 8;
+
+    // ============================================================
+    // OVERALL SCORE
+    // ============================================================
+
+    ensureSpace(32);
+
+    pdf.setFillColor(255, 247, 237);
+    pdf.setDrawColor(254, 215, 170);
+
+    pdf.roundedRect(
+      margin,
+      y,
+      contentWidth,
+      27,
+      3,
+      3,
+      "FD"
+    );
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(11);
+    pdf.setTextColor(154, 52, 18);
+    pdf.text("Overall SEO Score", margin + 6, y + 9);
+
+    pdf.setFontSize(20);
+    pdf.setTextColor(249, 115, 22);
+
+    pdf.text(
+      `${audit.score}/100`,
+      pageWidth - margin - 6,
+      y + 17,
+      {
+        align: "right",
+      }
+    );
+
+    y += 37;
+
+    // ============================================================
+    // CATEGORY SCORES
+    // ============================================================
+
+    addSectionTitle("SEO Category Scores");
+
+    addRow(
+      "Technical SEO",
+      `${audit.results.technicalSeo.score}/100 - ${audit.results.technicalSeo.status}`
+    );
+
+    addRow(
+      "Page Performance",
+      `${audit.results.pagePerformance.score}/100 - ${audit.results.pagePerformance.status}`
+    );
+
+    addRow(
+      "Meta Tags",
+      `${audit.results.metaTags.score}/100 - ${audit.results.metaTags.status}`
+    );
+
+    addRow(
+      "Mobile Optimization",
+      `${audit.results.mobileOptimization.score}/100 - ${audit.results.mobileOptimization.status}`
+    );
+
+    addRow(
+      "Content Quality",
+      `${audit.results.contentQuality.score}/100 - ${audit.results.contentQuality.status}`
+    );
+
+    addRow(
+      "SEO Opportunities",
+      `${audit.results.seoOpportunities.score}/100 - ${audit.results.seoOpportunities.status}`
+    );
+
+    // ============================================================
+    // WEBSITE OVERVIEW
+    // ============================================================
+
+    addSectionTitle("Website Overview");
+
+    addRow("Hostname", audit.website.hostname);
+    addRow("HTTP Status", audit.website.statusCode);
+    addRow(
+      "Response Time",
+      `${audit.website.responseTime} ms`
+    );
+    addRow(
+      "HTML Size",
+      `${audit.website.htmlSizeKB} KB`
+    );
+
+    // ============================================================
+    // ON-PAGE SEO
+    // ============================================================
+
+    addSectionTitle("On-Page SEO");
+
+    addRow("Page Title", audit.details.title);
+    addRow(
+      "Title Length",
+      `${audit.details.titleLength} characters`
+    );
+
+    addRow(
+      "Meta Description",
+      audit.details.description
+    );
+
+    addRow(
+      "Description Length",
+      `${audit.details.descriptionLength} characters`
+    );
+
+    addRow("H1 Headings", audit.details.h1Count);
+    addRow("H2 Headings", audit.details.h2Count);
+    addRow("Word Count", audit.details.wordCount);
+
+    // ============================================================
+    // IMAGES & LINKS
+    // ============================================================
+
+    addSectionTitle("Images & Links");
+
+    addRow("Total Images", audit.details.totalImages);
+    addRow(
+      "Images With ALT",
+      audit.details.imagesWithAlt
+    );
+    addRow(
+      "Images Without ALT",
+      audit.details.imagesWithoutAlt
+    );
+    addRow(
+      "Internal Links",
+      audit.details.internalLinks
+    );
+    addRow(
+      "External Links",
+      audit.details.externalLinks
+    );
+
+    // ============================================================
+    // TECHNICAL CHECKS
+    // ============================================================
+
+    addSectionTitle("Technical SEO Checks");
+
+    addRow(
+      "HTTPS",
+      audit.details.https ? "Passed" : "Not detected"
+    );
+
+    addRow(
+      "Mobile Viewport",
+      audit.details.mobileViewport
+        ? "Passed"
+        : "Not detected"
+    );
+
+    addRow(
+      "Robots.txt",
+      audit.details.robotsTxt
+        ? "Detected"
+        : "Not detected"
+    );
+
+    addRow(
+      "Sitemap",
+      audit.details.sitemap
+        ? "Detected"
+        : "Not detected"
+    );
+
+    addRow(
+      "Favicon",
+      audit.details.favicon
+        ? "Detected"
+        : "Not detected"
+    );
+
+    addRow(
+      "Canonical URL",
+      audit.details.canonical
+    );
+
+    addRow(
+      "Robots Meta",
+      audit.details.robotsMeta
+    );
+
+    addRow(
+      "Page Language",
+      audit.details.language
+    );
+
+    // ============================================================
+    // MISSING ALT IMAGES
+    // ============================================================
+
+    if (
+      audit.details.missingAltImages &&
+      audit.details.missingAltImages.length > 0
+    ) {
+      addSectionTitle("Images Missing ALT Text");
+
+            audit.details.missingAltImages
+        .filter(
+          (image) =>
+            image.src &&
+            !image.src.startsWith("data:")
+        )
+        .forEach((image, index) => {
+          ensureSpace(22);
+
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(9);
+          pdf.setTextColor(15, 23, 42);
+
+          pdf.text(
+            `${index + 1}. Image`,
+            margin,
+            y
+          );
+
+          y += 5;
+
+          addParagraph(`Source: ${image.src}`);
+
+          if (image.recommendedAlt) {
+            addParagraph(
+              `Recommended ALT: ${image.recommendedAlt}`
+            );
+          }
+
+          y += 2;
+        });
+        }
+
+    // ============================================================
+    // RECOMMENDATIONS
+    // ============================================================
+
+    if (
+      audit.recommendations &&
+      audit.recommendations.length > 0
+    ) {
+      addSectionTitle("SEO Recommendations");
+
+      audit.recommendations.forEach(
+        (recommendation, index) => {
+          ensureSpace(25);
+
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(10);
+
+          if (recommendation.type === "success") {
+            pdf.setTextColor(22, 101, 52);
+          } else if (recommendation.type === "error") {
+            pdf.setTextColor(185, 28, 28);
+          } else {
+            pdf.setTextColor(194, 65, 12);
+          }
+
+          pdf.text(
+            `${index + 1}. ${recommendation.title}`,
+            margin,
+            y
+          );
+
+          y += 6;
+
+          addParagraph(recommendation.description);
+
+          if (recommendation.recommendedTitle) {
+            addParagraph(
+              `Recommended Title: ${recommendation.recommendedTitle}`
+            );
+          }
+
+          if (recommendation.recommendedH1) {
+            addParagraph(
+              `Recommended H1: ${recommendation.recommendedH1}`
+            );
+          }
+
+          if (
+            recommendation.recommendedMetaDescription
+          ) {
+            addParagraph(
+              `Recommended Meta Description: ${recommendation.recommendedMetaDescription}`
+            );
+          }
+
+          y += 3;
+        }
+      );
+    }
+
+    // ============================================================
+    // SEARCH CONSOLE - OPTIONAL
+    // ============================================================
+
+    if (searchConsole?.success) {
+      addSectionTitle("Google Search Console");
+
+      addRow(
+        "Period",
+        `${searchConsole.period.startDate} to ${searchConsole.period.endDate}`
+      );
+
+      addRow(
+        "Total Clicks",
+        searchConsole.summary.clicks
+      );
+
+      addRow(
+        "Total Impressions",
+        searchConsole.summary.impressions
+      );
+
+      addRow(
+        "Average CTR",
+        `${searchConsole.summary.averageCtr.toFixed(2)}%`
+      );
+
+      addRow(
+        "Average Position",
+        searchConsole.summary.averagePosition.toFixed(2)
+      );
+
+      if (searchConsole.queries.length > 0) {
+        ensureSpace(15);
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text("Top Search Queries", margin, y);
+
+        y += 7;
+
+        searchConsole.queries
+          .slice(0, 10)
+          .forEach((query, index) => {
+            addParagraph(
+              `${index + 1}. ${query.query} | Clicks: ${query.clicks} | Impressions: ${query.impressions} | CTR: ${(query.ctr * 100).toFixed(2)}% | Position: ${query.position.toFixed(2)}`
+            );
+          });
+      }
+    }
+
+    // ============================================================
+    // FINAL FOOTER
+    // ============================================================
+
+    addFooter();
+
+    const hostname =
+      audit.website.hostname
+        ?.replace(/^www\./, "")
+        .replace(/[^a-zA-Z0-9.-]/g, "-") ||
+      "website";
+
+    pdf.save(
+      `SEOMETRICHUB-SEO-Audit-${hostname}.pdf`
+    );
+  };
   const runAnotherAudit = () => {
     setAudit(null);
     setError("");
@@ -496,7 +1060,15 @@ const loadSearchConsole = async (siteUrl: string) => {
               <h2 className="mt-5 text-4xl font-black text-[#0F172A] sm:text-5xl">
                 Your SEO Overview
               </h2>
-
+<div className="mt-6 flex justify-center">
+  <button
+    type="button"
+    onClick={downloadPdfReport}
+    className="inline-flex items-center justify-center rounded-xl bg-[#0F172A] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#1E293B] hover:shadow-lg"
+  >
+    Download PDF Report
+  </button>
+</div>
               <p className="mx-auto mt-3 max-w-3xl text-[#64748B]">
                 Analysis completed for{" "}
                 <span className="break-all font-bold text-[#0F172A]">
