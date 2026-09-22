@@ -21,6 +21,148 @@ type GeminiResponse = {
   };
 };
 
+type GeminiResult = {
+  ok: boolean;
+  status: number;
+  data: GeminiResponse;
+  model: string;
+};
+
+const PRIMARY_MODEL = "gemini-3.8-flash";
+const FALLBACK_MODEL = "gemini-3.6-flash";
+
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  prompt: string,
+  maxAttempts = 3,
+): Promise<GeminiResult> {
+  let lastResult: GeminiResult = {
+    ok: false,
+    status: 503,
+    data: {
+      error: {
+        message: "Gemini service is temporarily unavailable.",
+      },
+    },
+    model,
+  };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 4096,
+            },
+          }),
+          cache: "no-store",
+        },
+      );
+
+      let data: GeminiResponse;
+
+      try {
+        data = (await response.json()) as GeminiResponse;
+      } catch {
+        data = {
+          error: {
+            message: `Gemini API returned HTTP ${response.status}.`,
+          },
+        };
+      }
+
+      lastResult = {
+        ok: response.ok,
+        status: response.status,
+        data,
+        model,
+      };
+
+      if (response.ok) {
+        return lastResult;
+      }
+
+      console.error("Gemini content generator attempt failed:", {
+        model,
+        attempt,
+        status: response.status,
+        message:
+          data?.error?.message ||
+          `Gemini API returned HTTP ${response.status}.`,
+      });
+
+      if (
+        !RETRYABLE_STATUSES.has(response.status) ||
+        attempt === maxAttempts
+      ) {
+        return lastResult;
+      }
+    } catch (error) {
+      console.error("Gemini content generator network error:", {
+        model,
+        attempt,
+        error,
+      });
+
+      lastResult = {
+        ok: false,
+        status: 503,
+        data: {
+          error: {
+            message: "Unable to reach the Gemini API.",
+          },
+        },
+        model,
+      };
+
+      if (attempt === maxAttempts) {
+        return lastResult;
+      }
+    }
+
+    // Short exponential backoff:
+    // attempt 1 -> 1 second
+    // attempt 2 -> 2 seconds
+    await sleep(1000 * 2 ** (attempt - 1));
+  }
+
+  return lastResult;
+}
+
+function extractContent(data: GeminiResponse) {
+  return (
+    data.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("")
+      .trim() || ""
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -43,8 +185,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as ContentRequest;
 
     const topic = body.topic?.trim();
-    const contentType =
-      body.contentType?.trim() || "Blog Article";
+    const contentType = body.contentType?.trim() || "Blog Article";
     const tone = body.tone?.trim() || "Professional";
     const keywords = body.keywords?.trim() || "";
 
@@ -142,7 +283,6 @@ export async function POST(request: Request) {
     // ============================================================
 
     const prompt = `
-    
 You are an expert SEO content writer for SEOMETRICHUB.
 
 Create original, accurate, useful, human-readable SEO content based ONLY on the user's requested topic, content type, tone, and target keywords.
@@ -191,49 +331,69 @@ Before returning the content, silently proofread it for:
 Then return the polished final content.
 `.trim();
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 4096,
-          },
-        }),
-        cache: "no-store",
-      },
+    // ============================================================
+    // PRIMARY MODEL
+    // ============================================================
+
+    let geminiResult = await callGemini(
+      apiKey,
+      PRIMARY_MODEL,
+      prompt,
+      3,
     );
 
-    const data = (await response.json()) as GeminiResponse;
+    let content = geminiResult.ok
+      ? extractContent(geminiResult.data)
+      : "";
 
-    if (!response.ok) {
-      console.error(
-        "Gemini content generator error:",
-        data?.error?.message || response.status,
+    // ============================================================
+    // FALLBACK MODEL
+    // Only use fallback when the primary model failed with a
+    // transient provider error.
+    // ============================================================
+
+    if (
+      !content &&
+      RETRYABLE_STATUSES.has(geminiResult.status)
+    ) {
+      console.warn("Trying Gemini fallback model:", {
+        primaryModel: PRIMARY_MODEL,
+        fallbackModel: FALLBACK_MODEL,
+        primaryStatus: geminiResult.status,
+      });
+
+      geminiResult = await callGemini(
+        apiKey,
+        FALLBACK_MODEL,
+        prompt,
+        2,
       );
+
+      content = geminiResult.ok
+        ? extractContent(geminiResult.data)
+        : "";
+    }
+
+    if (!geminiResult.ok) {
+      console.error("Gemini content generator final failure:", {
+        model: geminiResult.model,
+        status: geminiResult.status,
+        message:
+          geminiResult.data?.error?.message ||
+          `Gemini API returned HTTP ${geminiResult.status}.`,
+      });
+
+      const publicStatus =
+        geminiResult.status === 429 ? 429 : 503;
 
       return NextResponse.json(
         {
           success: false,
           providerConfigured: true,
           error:
-            data?.error?.message ||
-            `Gemini API returned HTTP ${response.status}.`,
+            geminiResult.status === 429
+              ? "AI generation is temporarily rate limited. Please try again shortly."
+              : "AI content generation is temporarily unavailable. Please try again shortly.",
           quota: {
             used: quotaCheck.used,
             limit: quotaCheck.limit_value,
@@ -241,15 +401,9 @@ Then return the polished final content.
             periodEnd: quotaCheck.period_end,
           },
         },
-        { status: response.status },
+        { status: publicStatus },
       );
     }
-
-    const content =
-      data.candidates?.[0]?.content?.parts
-        ?.map((part) => part.text || "")
-        .join("")
-        .trim() || "";
 
     if (!content) {
       return NextResponse.json(
@@ -328,6 +482,7 @@ Then return the polished final content.
     return NextResponse.json({
       success: true,
       providerConfigured: true,
+      model: geminiResult.model,
       content,
       quota: {
         used: quota.used,
