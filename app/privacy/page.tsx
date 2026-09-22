@@ -13,16 +13,25 @@ export default function PrivacyPolicyPage() {
       <main>
       <section className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
         <div className="mb-10">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-orange-600">
-            Legal
-          </p>
+                      <p>
+              If you have questions about this Privacy Policy, your personal
+              information, account data, or a privacy-related request, please
+              contact us at{" "}
+              <a
+                href="mailto:support@seometrichub.com"
+                className="font-semibold text-orange-600 hover:text-orange-700"
+              >
+                support@seometrichub.com
+              </a>
+              .
+            </p>
 
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
             Privacy Policy
           </h1>
 
           <p className="mt-4 text-sm text-slate-500">
-            Last updated: September 7, 2026
+            Last updated: September 22, 2026
           </p>
         </div>
 
@@ -70,6 +79,28 @@ export default function PrivacyPolicyPage() {
               type, device information, IP address, request logs, timestamps,
               error information, and usage information for security,
               troubleshooting, and service improvement.
+            </p>
+                        <p className="mt-4">
+              When you create or use a SEOMETRICHUB account, we may process
+              account information such as your email address, authentication
+              information, subscription status, selected plan, usage limits,
+              and tool usage associated with your account.
+            </p>
+
+            <p className="mt-4">
+              When you purchase a paid plan, payment processing is handled by
+              third-party payment providers such as PayU. SEOMETRICHUB may
+              receive and store transaction-related information such as the
+              selected plan, transaction identifier, payment status, amount,
+              payment provider reference, and transaction date for billing,
+              subscription activation, support, fraud prevention, and record
+              keeping purposes.
+            </p>
+
+            <p className="mt-4">
+              SEOMETRICHUB does not directly store your full card number, UPI
+              PIN, banking password, or other payment credentials used to
+              authorize a transaction through the payment provider.
             </p>
           </section>
 
@@ -221,21 +252,40 @@ export default function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section>
+                    <section>
             <h2 className="mb-3 text-2xl font-bold text-slate-900">
-              11. Your Choices
+              11. Your Choices and Data Requests
             </h2>
 
             <p>
               You may choose not to use optional integrations. Where supported,
-              you may also revoke SEOMETRICHUB&apos;s Google account access
+              you may revoke SEOMETRICHUB&apos;s access to your Google account
               through your Google Account permissions.
             </p>
 
             <p className="mt-4">
-              You may stop using the service at any time. Additional account or
-              deletion controls may be introduced as user account features are
-              added to the platform.
+              You may request access to, correction of, or deletion of personal
+              information associated with your SEOMETRICHUB account, subject to
+              applicable legal, security, fraud-prevention, billing, and
+              record-keeping requirements.
+            </p>
+
+            <p className="mt-4">
+              To submit a privacy or account deletion request, contact{" "}
+              <a
+                href="mailto:support@seometrichub.com"
+                className="font-semibold text-orange-600 hover:text-orange-700"
+              >
+                support@seometrichub.com
+              </a>
+              {" "}using the email address associated with your account. We may
+              need to verify your identity before completing the request.
+            </p>
+
+            <p className="mt-4">
+              Some transaction, billing, security, or compliance records may be
+              retained where reasonably necessary or required by applicable
+              law even after an account deletion request is completed.
             </p>
           </section>
 

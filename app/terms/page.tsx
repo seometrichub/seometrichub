@@ -221,20 +221,64 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <section>
+                    <section>
             <h2 className="mb-3 text-2xl font-bold text-slate-900">
-              12. Free and Paid Features
+              12. Plans, Payments, Cancellations and Refunds
             </h2>
 
             <p>
-              SEOMETRICHUB may offer free, limited, trial, premium, subscription,
-              or usage-based features.
+              SEOMETRICHUB may offer free and paid subscription plans with
+              different features, usage limits, prices, and subscription
+              periods. The applicable plan details and price will be displayed
+              before purchase.
             </p>
 
             <p className="mt-4">
-              Pricing, limits, included features, billing terms, and
-              availability of paid plans will be displayed when applicable and
-              may change over time.
+              Payments for paid plans may be processed through third-party
+              payment providers. By completing a purchase, you authorize the
+              applicable payment provider to process the transaction according
+              to the payment details you provide.
+            </p>
+
+            <p className="mt-4">
+              Access to paid features is activated after a successful payment
+              is confirmed. Your paid access remains available for the
+              applicable subscription period, subject to these Terms and any
+              usage limits associated with your plan.
+            </p>
+
+            <p className="mt-4">
+              Unless otherwise stated at the time of purchase, successfully
+              completed payments for SEOMETRICHUB digital subscription plans
+              are generally non-refundable.
+            </p>
+
+            <p className="mt-4">
+              If you believe you were charged more than once for the same
+              purchase, experienced a verified billing error, or paid
+              successfully but did not receive the purchased plan, contact us
+              at{" "}
+              <a
+                href="mailto:support@seometrichub.com"
+                className="font-semibold text-orange-600 hover:text-orange-700"
+              >
+                support@seometrichub.com
+              </a>
+              . We will review the transaction and, where appropriate, provide
+              a correction or refund.
+            </p>
+
+            <p className="mt-4">
+              Where recurring billing or renewal is offered, cancellation
+              prevents future renewals or charges after the applicable
+              cancellation takes effect. Cancellation does not automatically
+              create a refund for an already completed subscription period.
+            </p>
+
+            <p className="mt-4">
+              Pricing, plan limits, included features, and subscription terms
+              may change over time. Any applicable updated terms will be
+              presented as required before a new purchase or renewal.
             </p>
           </section>
 
@@ -305,10 +349,17 @@ export default function TermsPage() {
               17. Contact
             </h2>
 
-            <p>
-              If you have questions about these Terms of Service, please contact
-              us through the contact information published on the SEOMETRICHUB
-              website.
+                        <p>
+              If you have questions about these Terms of Service, billing,
+              payments, subscriptions, or your SEOMETRICHUB account, please
+              contact us at{" "}
+              <a
+                href="mailto:support@seometrichub.com"
+                className="font-semibold text-orange-600 hover:text-orange-700"
+              >
+                support@seometrichub.com
+              </a>
+              .
             </p>
           </section>
         </div>
