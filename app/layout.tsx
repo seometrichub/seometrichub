@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://seometrichub.vercel.app"),
+  metadataBase: new URL("https://seometrichub.com"),
 
   title: {
     default: "SEOMETRICHUB – AI SEO & Digital Marketing Tools",
@@ -45,6 +45,8 @@ export const metadata: Metadata = {
   creator: "SEOMETRICHUB",
   publisher: "SEOMETRICHUB",
 
+  
+
   robots: {
     index: true,
     follow: true,
@@ -57,7 +59,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://seometrichub.vercel.app",
+    url: "https://seometrichub.com",
     siteName: "SEOMETRICHUB",
     title: "SEOMETRICHUB – AI SEO & Digital Marketing Tools",
     description:
