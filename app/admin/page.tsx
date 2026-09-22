@@ -17,6 +17,12 @@ type Plan = {
   code: string;
   name: string;
   price_inr: number | string | null;
+  website_audits_limit: number;
+  keyword_searches_limit: number;
+  backlink_analysis_limit: number;
+  competitor_analysis_limit: number;
+  ai_articles_limit: number;
+  social_generations_limit: number;
 };
 
 type Subscription = {
@@ -39,6 +45,18 @@ type Payment = {
   amount: number | string | null;
   currency: string | null;
   created_at: string;
+};
+type MonthlyUsage = {
+  id: string;
+  user_id: string;
+  period_start: string;
+  period_end: string;
+  website_audits_used: number;
+  keyword_searches_used: number;
+  backlink_analysis_used: number;
+  competitor_analysis_used: number;
+  ai_articles_used: number;
+  social_generations_used: number;
 };
 
 function formatDate(value: string | null | undefined) {
@@ -206,7 +224,18 @@ export default async function AdminPage() {
     error: plansError,
   } = await supabaseAdmin
     .from("plans")
-    .select("id, code, name, price_inr")
+   .select(`
+  id,
+  code,
+  name,
+  price_inr,
+  website_audits_limit,
+  keyword_searches_limit,
+  backlink_analysis_limit,
+  competitor_analysis_limit,
+  ai_articles_limit,
+  social_generations_limit
+`)
     .order("price_inr", { ascending: true });
 
   if (plansError) {
@@ -250,7 +279,7 @@ export default async function AdminPage() {
     );
   }
 
-  const subscriptions =
+    const subscriptions =
     (subscriptionsData ?? []) as Subscription[];
 
   const subscriptionMap = new Map(
@@ -260,6 +289,7 @@ export default async function AdminPage() {
     ]),
   );
 
+  
   // ============================================================
   // 7. LOAD PAYMENTS
   // ============================================================
@@ -294,7 +324,51 @@ export default async function AdminPage() {
 
   const payments =
     (paymentsData ?? []) as Payment[];
+  // ============================================================
+  // LOAD CURRENT MONTH TOOL USAGE
+  // ============================================================
 
+  const currentMonthStart =
+    new Date().toISOString().slice(0, 7) + "-01";
+
+  const {
+    data: monthlyUsageData,
+    error: monthlyUsageError,
+  } = await supabaseAdmin
+    .from("monthly_usage")
+    .select(
+      `
+        id,
+        user_id,
+        period_start,
+        period_end,
+        website_audits_used,
+        keyword_searches_used,
+        backlink_analysis_used,
+        competitor_analysis_used,
+        ai_articles_used,
+        social_generations_used
+      `,
+    )
+    .eq("period_start", currentMonthStart)
+    .order("updated_at", { ascending: false });
+
+  if (monthlyUsageError) {
+    console.error(
+      "Admin monthly usage lookup failed:",
+      monthlyUsageError,
+    );
+  }
+
+  const monthlyUsage =
+    (monthlyUsageData ?? []) as MonthlyUsage[];
+
+  const usageMap = new Map(
+    monthlyUsage.map((usage) => [
+      usage.user_id,
+      usage,
+    ]),
+  );
   // ============================================================
   // 8. CALCULATIONS
   // ============================================================
@@ -644,6 +718,90 @@ export default async function AdminPage() {
                       </td>
                     </tr>
                   )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+                    {/* TOOL USAGE */}
+
+          <section className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 px-6 py-5">
+              <h2 className="text-xl font-bold text-slate-950">
+                Monthly Tool Usage
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Current month usage for every user based on their plan limits.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4">User</th>
+                    <th className="px-6 py-4">Website Audits</th>
+                    <th className="px-6 py-4">Keywords</th>
+                    <th className="px-6 py-4">Backlinks</th>
+                    <th className="px-6 py-4">Competitor</th>
+                    <th className="px-6 py-4">AI Articles</th>
+                    <th className="px-6 py-4">Social</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100">
+                  {authUsers.map((account) => {
+                    const subscription =
+                      subscriptionMap.get(account.id);
+
+                    const plan = subscription
+                      ? planMap.get(Number(subscription.plan_id))
+                      : planMap.get(1);
+
+                    const usage =
+                      usageMap.get(account.id);
+
+                    return (
+                      <tr
+                        key={`usage-${account.id}`}
+                        className="hover:bg-slate-50"
+                      >
+                        <td className="px-6 py-4 font-medium text-slate-900">
+                          {account.email ?? "No email"}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {usage?.website_audits_used ?? 0}/
+                          {plan?.website_audits_limit ?? 0}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {usage?.keyword_searches_used ?? 0}/
+                          {plan?.keyword_searches_limit ?? 0}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {usage?.backlink_analysis_used ?? 0}/
+                          {plan?.backlink_analysis_limit ?? 0}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {usage?.competitor_analysis_used ?? 0}/
+                          {plan?.competitor_analysis_limit ?? 0}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {usage?.ai_articles_used ?? 0}/
+                          {plan?.ai_articles_limit ?? 0}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          {usage?.social_generations_used ?? 0}/
+                          {plan?.social_generations_limit ?? 0}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
