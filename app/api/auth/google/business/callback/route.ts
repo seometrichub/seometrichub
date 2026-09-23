@@ -3,8 +3,8 @@ import { google } from "googleapis";
 
 export async function GET(request: Request) {
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const clientId = process.env.GOOGLE_BUSINESS_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_BUSINESS_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_BUSINESS_REDIRECT_URI;
 
     if (!clientId || !clientSecret || !redirectUri) {
