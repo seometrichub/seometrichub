@@ -28,20 +28,48 @@ type GeminiResult = {
   model: string;
 };
 
-const PRIMARY_MODEL = "gemini-3.8-flash";
-const FALLBACK_MODEL = "gemini-3.6-flash";
+const MODELS = [
+  {
+    id: "gemini-3.8-flash",
+    attempts: 3,
+  },
+  {
+    id: "gemini-3.6-flash",
+    attempts: 2,
+  },
+  {
+    id: "gemini-3.5-flash-lite",
+    attempts: 2,
+  },
+] as const;
 
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_STATUSES = new Set([
+  408,
+  429,
+  500,
+  502,
+  503,
+  504,
+]);
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(attempt: number) {
+  const baseDelay = 1000 * 2 ** (attempt - 1);
+
+  // Small random jitter so concurrent requests do not all retry together.
+  const jitter = Math.floor(Math.random() * 500);
+
+  return baseDelay + jitter;
 }
 
 async function callGemini(
   apiKey: string,
   model: string,
   prompt: string,
-  maxAttempts = 3,
+  maxAttempts: number,
 ): Promise<GeminiResult> {
   let lastResult: GeminiResult = {
     ok: false,
@@ -76,7 +104,6 @@ async function callGemini(
               },
             ],
             generationConfig: {
-              temperature: 0.7,
               maxOutputTokens: 4096,
             },
           }),
@@ -110,9 +137,10 @@ async function callGemini(
       console.error("Gemini content generator attempt failed:", {
         model,
         attempt,
+        maxAttempts,
         status: response.status,
         message:
-          data?.error?.message ||
+          data.error?.message ||
           `Gemini API returned HTTP ${response.status}.`,
       });
 
@@ -126,6 +154,7 @@ async function callGemini(
       console.error("Gemini content generator network error:", {
         model,
         attempt,
+        maxAttempts,
         error,
       });
 
@@ -145,10 +174,15 @@ async function callGemini(
       }
     }
 
-    // Short exponential backoff:
-    // attempt 1 -> 1 second
-    // attempt 2 -> 2 seconds
-    await sleep(1000 * 2 ** (attempt - 1));
+    const retryDelay = getRetryDelay(attempt);
+
+    console.warn("Retrying Gemini request:", {
+      model,
+      nextAttempt: attempt + 1,
+      retryDelayMs: retryDelay,
+    });
+
+    await sleep(retryDelay);
   }
 
   return lastResult;
@@ -161,6 +195,79 @@ function extractContent(data: GeminiResponse) {
       .join("")
       .trim() || ""
   );
+}
+
+async function generateWithFallbacks(
+  apiKey: string,
+  prompt: string,
+): Promise<{
+  result: GeminiResult;
+  content: string;
+}> {
+  let lastResult: GeminiResult = {
+    ok: false,
+    status: 503,
+    data: {
+      error: {
+        message: "Gemini service is temporarily unavailable.",
+      },
+    },
+    model: MODELS[0].id,
+  };
+
+  for (let index = 0; index < MODELS.length; index += 1) {
+    const modelConfig = MODELS[index];
+
+    if (index > 0) {
+      console.warn("Trying Gemini fallback model:", {
+        previousModel: lastResult.model,
+        previousStatus: lastResult.status,
+        fallbackModel: modelConfig.id,
+      });
+    }
+
+    const result = await callGemini(
+      apiKey,
+      modelConfig.id,
+      prompt,
+      modelConfig.attempts,
+    );
+
+    lastResult = result;
+
+    if (result.ok) {
+      const content = extractContent(result.data);
+
+      if (content) {
+        return {
+          result,
+          content,
+        };
+      }
+
+      console.error("Gemini returned an empty response:", {
+        model: result.model,
+      });
+
+      return {
+        result,
+        content: "",
+      };
+    }
+
+    // Do not move to another model for permanent client/config errors.
+    if (!RETRYABLE_STATUSES.has(result.status)) {
+      return {
+        result,
+        content: "",
+      };
+    }
+  }
+
+  return {
+    result: lastResult,
+    content: "",
+  };
 }
 
 export async function POST(request: Request) {
@@ -331,55 +438,20 @@ Before returning the content, silently proofread it for:
 Then return the polished final content.
 `.trim();
 
-    // ============================================================
-    // PRIMARY MODEL
-    // ============================================================
-
-    let geminiResult = await callGemini(
+    const generation = await generateWithFallbacks(
       apiKey,
-      PRIMARY_MODEL,
       prompt,
-      3,
     );
 
-    let content = geminiResult.ok
-      ? extractContent(geminiResult.data)
-      : "";
-
-    // ============================================================
-    // FALLBACK MODEL
-    // Only use fallback when the primary model failed with a
-    // transient provider error.
-    // ============================================================
-
-    if (
-      !content &&
-      RETRYABLE_STATUSES.has(geminiResult.status)
-    ) {
-      console.warn("Trying Gemini fallback model:", {
-        primaryModel: PRIMARY_MODEL,
-        fallbackModel: FALLBACK_MODEL,
-        primaryStatus: geminiResult.status,
-      });
-
-      geminiResult = await callGemini(
-        apiKey,
-        FALLBACK_MODEL,
-        prompt,
-        2,
-      );
-
-      content = geminiResult.ok
-        ? extractContent(geminiResult.data)
-        : "";
-    }
+    const geminiResult = generation.result;
+    const content = generation.content;
 
     if (!geminiResult.ok) {
       console.error("Gemini content generator final failure:", {
         model: geminiResult.model,
         status: geminiResult.status,
         message:
-          geminiResult.data?.error?.message ||
+          geminiResult.data.error?.message ||
           `Gemini API returned HTTP ${geminiResult.status}.`,
       });
 
