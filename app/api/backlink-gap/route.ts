@@ -1,4 +1,4 @@
-
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { analyzeBacklinkGap } from "@/lib/backlink-gap";
@@ -57,6 +57,8 @@ function normalizeDomain(value: string): string {
 }
 
 export async function POST(request: Request) {
+  let reservedRequestId: string | null = null;
+
   try {
     // STEP 1: AUTHENTICATION
     const supabase = await createClient();
@@ -143,25 +145,41 @@ export async function POST(request: Request) {
     // STEP 3: MONTHLY QUOTA
     // Temporarily shares competitor_analysis quota.
     const { data: quotaRows, error: quotaError } =
-      await supabase.rpc("consume_tool_usage", {
-        p_user_id: user.id,
-        p_tool: "competitor_analysis",
-      });
+  await supabase.rpc("reserve_backlink_gap_usage", {
+    p_user_id: user.id,
+  });
 
     if (quotaError) {
-      console.error("Backlink Gap quota error:", {
-        message: quotaError.message,
-        code: quotaError.code,
-      });
+  console.error("Backlink Gap quota error:", {
+    message: quotaError.message,
+    code: quotaError.code,
+  });
 
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Unable to verify your monthly usage limit.",
-        },
-        { status: 500 }
-      );
-    }
+  const isDuplicateRequest =
+    quotaError.code === "23505" &&
+    quotaError.message.includes(
+      "tool_usage_requests_one_pending_per_user_idx"
+    );
+
+  if (isDuplicateRequest) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "A Backlink Gap analysis is already in progress. Please wait for it to finish.",
+      },
+      { status: 409 }
+    );
+  }
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to verify your monthly usage limit.",
+    },
+    { status: 500 }
+  );
+}
 
     const quota = Array.isArray(quotaRows)
       ? quotaRows[0]
@@ -194,9 +212,32 @@ export async function POST(request: Request) {
         { status: 429 }
       );
     }
+    // STEP 3A: VALIDATE QUOTA RESERVATION ID
+const requestId = quota.request_id;
 
-    // STEP 4: REAL DATAFORSEO BACKLINK GAP
-    let result;
+if (
+  typeof requestId !== "string" ||
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)
+) {
+  console.error(
+    "Backlink Gap reservation ID missing or invalid."
+  );
+
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        "Usage reservation could not be verified. Please contact support before retrying.",
+    },
+    { status: 500 }
+  );
+}
+
+  // Track the successful reservation for unexpected errors.
+reservedRequestId = requestId;
+
+// STEP 4: REAL DATAFORSEO BACKLINK GAP
+let result;
 
     try {
       result = await analyzeBacklinkGap(
@@ -205,34 +246,129 @@ export async function POST(request: Request) {
         100
       );
     } catch (error) {
-      console.error("Backlink Gap provider error:", error);
+  console.error("Backlink Gap provider error:", {
+    requestId,
+    error,
+  });
 
-      return NextResponse.json(
+  // Provider may have processed the request.
+  // Do not automatically refund uncertain outcomes.
+  let finalized = false;
+
+  try {
+    const admin = createAdminClient();
+
+    const { data, error: finalizeError } =
+      await admin.rpc("finalize_backlink_gap_usage", {
+        p_request_id: requestId,
+        p_status: "unknown",
+      });
+
+    if (finalizeError || data !== true) {
+      console.error(
+        "Backlink Gap unknown-status finalization failed:",
         {
-          success: false,
-          error:
-            "Backlink data is currently unavailable. Please try again later.",
-          quota: quotaInfo,
-        },
-        { status: 502 }
+          requestId,
+          message: finalizeError?.message,
+          data,
+        }
       );
+    } else {
+      finalized = true;
     }
-
-    // STEP 5: SUCCESS RESPONSE
-    return NextResponse.json({
-      success: true,
-      ...result,
-      quota: quotaInfo,
-    });
-  } catch (error) {
-    console.error("Backlink Gap API error:", error);
-
-    return NextResponse.json(
+  } catch (finalizeException) {
+    console.error(
+      "Backlink Gap finalization exception:",
       {
-        success: false,
-        error: "Unable to complete Backlink Gap Analysis.",
-      },
-      { status: 500 }
+        requestId,
+        error: finalizeException,
+      }
     );
   }
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: finalized
+        ? "Backlink data is currently unavailable. Usage has been recorded for review."
+        : "Backlink data is unavailable and usage tracking could not be confirmed. Please contact support before retrying.",
+      quota: quotaInfo,
+    },
+    { status: finalized ? 502 : 500 }
+  );
+}
+
+    // STEP 5: FINALIZE SUCCESSFUL ANALYSIS
+const admin = createAdminClient();
+
+const { data: finalized, error: finalizeError } =
+  await admin.rpc("finalize_backlink_gap_usage", {
+    p_request_id: requestId,
+    p_status: "completed",
+  });
+
+if (finalizeError || finalized !== true) {
+  console.error("Backlink Gap finalization error:", {
+    requestId,
+    message: finalizeError?.message,
+    finalized,
+  });
+
+  return NextResponse.json(
+    {
+      success: false,
+      error:
+        "Analysis completed, but usage tracking could not be confirmed. Please contact support before retrying.",
+    },
+    { status: 500 }
+  );
+}
+
+// STEP 6: SUCCESS RESPONSE
+return NextResponse.json({
+  success: true,
+  ...result,
+  quota: quotaInfo,
+});
+  } catch (error) {
+  console.error("Backlink Gap API error:", {
+    requestId: reservedRequestId,
+    error,
+  });
+
+  if (reservedRequestId) {
+    try {
+      const admin = createAdminClient();
+
+      const { data, error: finalizeError } =
+        await admin.rpc("finalize_backlink_gap_usage", {
+          p_request_id: reservedRequestId,
+          p_status: "unknown",
+        });
+
+      if (finalizeError || data !== true) {
+        console.error("Backlink Gap recovery finalization:", {
+          requestId: reservedRequestId,
+          message: finalizeError?.message,
+          finalized: data,
+        });
+      }
+    } catch (finalizeException) {
+      console.error("Backlink Gap recovery exception:", {
+        requestId: reservedRequestId,
+        error: finalizeException,
+      });
+    }
+  }
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: reservedRequestId
+        ? "Analysis interrupted. Usage status may require review. Please contact support before retrying."
+        : "Unable to complete Backlink Gap Analysis.",
+    },
+    { status: 500 }
+  );
+}
 }
