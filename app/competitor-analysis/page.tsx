@@ -27,8 +27,66 @@ type PageAnalysis = {
   score: number;
 };
 
+type OrganicKeyword = {
+  keyword: string;
+  position: number | null;
+  searchVolume: number;
+  cpc: number | null;
+  competition: number | null;
+  estimatedTraffic: number;
+  searchIntent: string | null;
+  url: string | null;
+};
+
+type OrganicCompetitorData = {
+  domain: string;
+  locationCode: number;
+  languageCode: string;
+  totalKeywords: number;
+  estimatedOrganicTraffic: number;
+  keywords: OrganicKeyword[];
+  provider: "DataForSEO";
+  fetchedAt: string;
+};
+
+type OrganicIntelligenceItem = {
+  domain: string;
+  available: boolean;
+  data: OrganicCompetitorData | null;
+  error: string | null;
+};
+
+
+type KeywordGapItem = {
+  keyword: string;
+  competitor: string;
+  competitorPosition: number | null;
+  yourPosition: number | null;
+  searchVolume: number;
+  cpc: number | null;
+  intent: string | null;
+  opportunity: string;
+  type: "missing" | "weak";
+  relevance?: "High" | "Low";
+  priority?: "High" | "Medium" | "Low";
+  priorityScore?: number;
+  matchedTopics?: string[];
+};
+
+
+type KeywordGapSummary = {
+  totalOpportunities: number;
+  missingKeywords: number;
+  weakKeywords: number;
+  sampleBased: boolean;
+  yourSiteDataAvailable?: boolean;
+};
+
 type AnalysisResponse = {
   success: boolean;
+  organicIntelligence?: OrganicIntelligenceItem[];
+  keywordGap?: KeywordGapItem[];
+keywordGapSummary?: KeywordGapSummary;
   yourSite?: PageAnalysis;
   competitors?: PageAnalysis[];
   recommendations?: string[];
@@ -82,7 +140,9 @@ export default function CompetitorAnalysisPage() {
   const [yourUrl, setYourUrl] = useState("");
   const [competitor1, setCompetitor1] = useState("");
   const [competitor2, setCompetitor2] = useState("");
-
+const [priorityFilter, setPriorityFilter] = useState<
+  "all" | "high"
+>("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalysisResponse | null>(null);
@@ -272,7 +332,403 @@ export default function CompetitorAnalysisPage() {
           )}
         </div>
 
-      
+{/* COMPETITOR ON-PAGE ANALYSIS WARNINGS */}
+{result?.success &&
+  result.failures &&
+  result.failures.length > 0 && (
+    <section className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+      <h2 className="text-lg font-black text-amber-950">
+        Some Competitor Pages Could Not Be Analyzed
+      </h2>
+
+      <p className="mt-2 text-sm text-amber-900">
+        These websites did not allow our on-page SEO scanner
+        to access their HTML. Organic keyword intelligence
+        may still be available through DataForSEO.
+      </p>
+
+      <div className="mt-4 space-y-3">
+        {result.failures.map((failure, index) => (
+          <div
+            key={`${failure.url}-${index}`}
+            className="rounded-xl border border-amber-200 bg-white p-4"
+          >
+            <p className="break-all text-sm font-bold text-slate-900">
+              {failure.url}
+            </p>
+
+            <p className="mt-1 text-sm text-amber-800">
+              {failure.error}
+            </p>
+
+            <p className="mt-2 text-xs text-slate-600">
+              On-page SEO comparison unavailable for this
+              website. No SEO score has been estimated.
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+{/* ORGANIC COMPETITOR INTELLIGENCE */}
+{result?.success && result.organicIntelligence && (
+  <section className="mt-10 space-y-6">
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
+        DataForSEO Organic Intelligence
+      </p>
+      <h2 className="mt-2 text-2xl font-black text-slate-950">
+        Organic Competitor Intelligence
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Real organic keyword rankings, search volumes, CPC and
+        estimated traffic for India (English).
+      </p>
+    </div>
+
+    {result.organicIntelligence.map((item, index) => (
+      <div
+        key={`${item.domain}-${index}`}
+        className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+      >
+        <div className="border-b border-slate-200 p-6 sm:p-8">
+          <p className="text-xs font-black uppercase tracking-widest text-violet-700">
+            {index === 0
+              ? "Your Website"
+              : `Competitor ${index}`}
+          </p>
+          <h3 className="mt-2 break-all text-xl font-black text-slate-950">
+            {item.domain}
+          </h3>
+
+          {!item.available || !item.data ? (
+            <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+              Organic keyword data is currently unavailable for
+              this website.
+            </p>
+          ) : (
+            <>
+              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <p className="text-xs font-bold text-slate-500">
+                    Total Ranking Keywords
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-slate-950">
+                    {item.data.totalKeywords.toLocaleString("en-IN")}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-violet-50 p-5">
+                  <p className="text-xs font-bold text-violet-700">
+                    Sample Estimated Traffic
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-violet-950">
+                    {item.data.estimatedOrganicTraffic.toLocaleString("en-IN")}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-blue-50 p-5">
+                  <p className="text-xs font-bold text-blue-700">
+                    Keywords Retrieved
+                  </p>
+                  <p className="mt-2 text-2xl font-black text-blue-950">
+                    {item.data.keywords.length}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {item.available && item.data && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="px-5 py-4">Keyword</th>
+                  <th className="px-5 py-4">Position</th>
+                  <th className="px-5 py-4">Volume</th>
+                  <th className="px-5 py-4">CPC</th>
+                  <th className="px-5 py-4">Intent</th>
+                  <th className="px-5 py-4">ETV</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100">
+                {item.data.keywords.map((keyword, keywordIndex) => (
+                  <tr
+                    key={`${keyword.keyword}-${keywordIndex}`}
+                    className="hover:bg-slate-50"
+                  >
+                    <td className="max-w-xs px-5 py-4 font-semibold text-slate-900">
+                      {keyword.url ? (
+                        <a
+                          href={keyword.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-violet-700 hover:underline"
+                        >
+                          {keyword.keyword}
+                        </a>
+                      ) : (
+                        keyword.keyword
+                      )}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      {keyword.position ?? "—"}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      {keyword.searchVolume.toLocaleString("en-IN")}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      {keyword.cpc === null
+                        ? "—"
+                        : `$${keyword.cpc.toFixed(2)}`}
+                    </td>
+
+                    <td className="px-5 py-4 capitalize">
+                      {keyword.searchIntent ?? "—"}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      {keyword.estimatedTraffic.toLocaleString("en-IN")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {item.data.keywords.length === 0 && (
+              <p className="p-6 text-sm text-slate-500">
+                No ranking keywords were returned for this domain.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    ))}
+
+    <p className="text-xs leading-5 text-slate-500">
+      Source: DataForSEO. Search volumes, CPC and ranking positions
+      are third-party metrics. Sample Estimated Traffic is the sum
+      of ETV for the retrieved keywords only, not total domain traffic.
+    </p>
+  </section>
+)}
+
+{/* KEYWORD GAP ANALYSIS */}
+{result?.success && result.keywordGapSummary && (
+  <section className="mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div className="border-b border-slate-200 p-6 sm:p-8">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
+        DataForSEO Keyword Gap
+      </p>
+
+      <h2 className="mt-2 text-2xl font-black text-slate-950">
+        Keyword Gap Opportunities
+      </h2>
+
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Compare your sampled ranking keywords with competitors
+        for India (English).
+      </p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        {[
+          {
+            label: "Total Opportunities",
+            value: result.keywordGapSummary.totalOpportunities,
+          },
+          {
+            label: "Not in Your Sample",
+            value: result.keywordGapSummary.missingKeywords,
+          },
+          {
+            label: "Weaker Rankings",
+            value: result.keywordGapSummary.weakKeywords,
+          },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-2xl bg-slate-50 p-5"
+          >
+            <p className="text-xs font-bold text-slate-500">
+              {stat.label}
+            </p>
+            <p className="mt-2 text-2xl font-black text-slate-950">
+              {stat.value.toLocaleString("en-IN")}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {result.keywordGapSummary.yourSiteDataAvailable ===
+        false && (
+        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Your website organic keyword data is unavailable.
+          These opportunities cannot be fully verified.
+        </p>
+      )}
+    </div>
+
+    {result.keywordGap && result.keywordGap.length > 0 ? (
+      <div className="overflow-x-auto">
+        <table className="min-w-[960px] w-full text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+            <tr>
+              <th className="px-5 py-4">Keyword</th>
+              <th className="px-5 py-4">Competitor</th>
+              <th className="px-5 py-4">Competitor Rank</th>
+              <th className="px-5 py-4">Your Rank</th>
+              <th className="px-5 py-4">Volume</th>
+              <th className="px-5 py-4">CPC</th>
+              <th className="px-5 py-4">Intent</th>
+              <th className="px-5 py-4">Opportunity</th>
+              <th className="px-5 py-4">Relevance</th>
+<th className="px-5 py-4">Priority</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-100">
+            {result.keywordGap
+  .filter(
+    (item) =>
+      priorityFilter === "all" ||
+      item.priority === "High"
+  )
+  .map((item, index) => (
+              <tr
+                key={`${item.competitor}-${item.keyword}-${index}`}
+                className="hover:bg-slate-50"
+              >
+                <td className="px-5 py-4 font-semibold text-slate-900">
+                  {item.keyword}
+                </td>
+
+                <td className="break-all px-5 py-4 text-slate-700">
+                  {item.competitor}
+                </td>
+
+                <td className="px-5 py-4">
+                  {item.competitorPosition ?? "—"}
+                </td>
+
+                <td className="px-5 py-4">
+                  {item.yourPosition ?? "Not in sample"}
+                </td>
+
+                <td className="px-5 py-4">
+                  {item.searchVolume.toLocaleString("en-IN")}
+                </td>
+
+                <td className="px-5 py-4">
+                  {item.cpc === null
+                    ? "—"
+                    : `$${item.cpc.toFixed(2)}`}
+                </td>
+
+                <td className="px-5 py-4 capitalize">
+                  {item.intent ?? "—"}
+                </td>
+
+                <td className="px-5 py-4">
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+                      item.type === "weak"
+                        ? "bg-amber-50 text-amber-800"
+                        : "bg-violet-50 text-violet-800"
+                    }`}
+                  >
+                    {item.type === "weak"
+                      ? "Improve ranking"
+                      : "Not in sample"}
+                  </span>
+
+<td className="px-5 py-4">
+  <span
+    className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+      item.relevance === "High"
+        ? "bg-emerald-50 text-emerald-700"
+        : "bg-slate-100 text-slate-600"
+    }`}
+  >
+    {item.relevance ?? "Not scored"}
+  </span>
+</td>
+
+<td className="px-5 py-4">
+  <span
+    className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+      item.priority === "High"
+        ? "bg-emerald-50 text-emerald-700"
+        : item.priority === "Medium"
+          ? "bg-amber-50 text-amber-700"
+          : "bg-slate-100 text-slate-600"
+    }`}
+  >
+    {item.priority ?? "Not scored"}
+  </span>
+</td>
+
+                </td>
+              </tr>
+            ))}
+
+<div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-6 py-4">
+  <span className="text-sm font-bold text-slate-600">
+    Filter Keywords:
+  </span>
+
+  <button
+    type="button"
+    onClick={() => setPriorityFilter("all")}
+    className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+      priorityFilter === "all"
+        ? "bg-violet-600 text-white"
+        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+    }`}
+  >
+    All Keywords
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setPriorityFilter("high")}
+    className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+      priorityFilter === "high"
+        ? "bg-violet-600 text-white"
+        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+    }`}
+  >
+    High Priority Only
+  </button>
+</div>
+
+          </tbody>
+        </table>
+      </div>
+    ) : (
+
+      <p className="p-6 text-sm text-slate-600">
+        No keyword gap opportunities were identified
+        in the retrieved sample.
+      </p>
+    )}
+
+    <p className="border-t border-slate-100 px-6 py-4 text-xs leading-5 text-slate-500">
+      Source: DataForSEO. Each domain contributes up to
+      20 retrieved keywords. "Not in sample" does not
+      necessarily mean your website does not rank for
+      that keyword.
+    </p>
+  </section>
+)}
+
+
           {/* MONTHLY USAGE */}
           {quota && (
             <div className="mt-10 rounded-3xl border border-violet-200 bg-violet-50 p-6 sm:p-8">

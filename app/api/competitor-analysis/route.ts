@@ -1,5 +1,11 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { fetchCompetitorOrganicKeywords } from "@/lib/dataforseo-competitors";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+
+export const runtime = "nodejs";
 
 type CompetitorRequest = {
   yourUrl?: string;
@@ -36,39 +42,141 @@ const BOT_USER_AGENT =
 
 const FETCH_TIMEOUT = 15000;
 
-function normalizeUrl(value: string) {
+function normalizeUrl(value: string): string {
   const trimmed = value.trim();
 
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-
-  return trimmed;
+  return /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
 }
 
-function isPrivateHostname(hostname: string) {
-  const lower = hostname.toLowerCase();
+function isPrivateIp(ip: string): boolean {
+  const lower = ip.toLowerCase();
 
-  if (
-    lower === "localhost" ||
-    lower === "127.0.0.1" ||
-    lower === "::1"
-  ) {
-    return true;
+  if (isIP(lower) === 4) {
+    const parts = lower.split(".").map(Number);
+    const [a, b, c] = parts;
+
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      a >= 224 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 192 && b === 0 && c === 0) ||
+      (a === 192 && b === 0 && c === 2) ||
+      (a === 198 && (b === 18 || b === 19)) ||
+      (a === 198 && b === 51 && c === 100) ||
+      (a === 203 && b === 0 && c === 113)
+    );
   }
 
-  if (
-    /^10\./.test(lower) ||
-    /^192\.168\./.test(lower) ||
-    /^172\.(1[6-9]|2\d|3[0-1])\./.test(lower)
-  ) {
-    return true;
+  if (isIP(lower) === 6) {
+    return (
+      lower === "::" ||
+      lower === "::1" ||
+      lower.startsWith("fc") ||
+      lower.startsWith("fd") ||
+      /^fe[89ab]/.test(lower) ||
+      lower.startsWith("2001:db8:") ||
+      lower.startsWith("::ffff:")
+    );
   }
 
-  return false;
+  return true;
 }
 
-function stripHtml(html: string) {
+async function validatePublicUrl(input: string): Promise<string> {
+  const url = new URL(normalizeUrl(input));
+
+  if (!["http:", "https:"].includes(url.protocol)) {
+    throw new Error("Only HTTP and HTTPS URLs are allowed.");
+  }
+
+  if (url.username || url.password) {
+    throw new Error("URLs with credentials are not allowed.");
+  }
+
+  if (url.port && !["80", "443"].includes(url.port)) {
+    throw new Error("Custom URL ports are not allowed.");
+  }
+
+  const hostname = url.hostname.toLowerCase();
+
+  if (
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    hostname.endsWith(".internal")
+  ) {
+    throw new Error("Private or local URLs are not allowed.");
+  }
+
+  if (isIP(hostname)) {
+    if (isPrivateIp(hostname)) {
+      throw new Error("Private or local IPs are not allowed.");
+    }
+  } else {
+    const addresses = await lookup(hostname, { all: true });
+
+    if (
+      addresses.length === 0 ||
+      addresses.some((item) => isPrivateIp(item.address))
+    ) {
+      throw new Error("Website does not resolve to a public IP.");
+    }
+  }
+
+  return url.toString();
+}
+
+async function fetchPublicPage(
+  input: string,
+  timeout = FETCH_TIMEOUT
+): Promise<Response> {
+  let current = await validatePublicUrl(input);
+
+  for (let redirects = 0; redirects <= 5; redirects++) {
+    const response = await fetch(current, {
+      headers: {
+        "User-Agent": BOT_USER_AGENT,
+        Accept: "text/html,application/xhtml+xml,*/*",
+      },
+      redirect: "manual",
+      cache: "no-store",
+      signal: AbortSignal.timeout(timeout),
+    });
+
+    if (
+      [301, 302, 303, 307, 308].includes(response.status)
+    ) {
+      const location = response.headers.get("location");
+
+      if (!location) {
+        throw new Error("Redirect location is missing.");
+      }
+
+      if (redirects === 5) {
+        throw new Error("Too many website redirects.");
+      }
+
+      current = await validatePublicUrl(
+        new URL(location, current).toString()
+      );
+
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("Unable to fetch website.");
+}
+
+function stripHtml(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -83,7 +191,10 @@ function stripHtml(html: string) {
     .trim();
 }
 
-function extractAttribute(tag: string, attribute: string) {
+function extractAttribute(
+  tag: string,
+  attribute: string
+): string {
   const regex = new RegExp(
     `${attribute}\\s*=\\s*["']([^"']*)["']`,
     "i"
@@ -92,7 +203,9 @@ function extractAttribute(tag: string, attribute: string) {
   return tag.match(regex)?.[1]?.trim() || "";
 }
 
-function calculateScore(data: Omit<PageAnalysis, "score">) {
+function calculateScore(
+  data: Omit<PageAnalysis, "score">
+): number {
   let score = 0;
 
   if (data.https) score += 10;
@@ -142,58 +255,26 @@ function calculateScore(data: Omit<PageAnalysis, "score">) {
   return Math.min(score, 100);
 }
 
-async function checkTextFile(url: string) {
+async function checkTextFile(url: string): Promise<boolean> {
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": BOT_USER_AGENT,
-      },
-      redirect: "follow",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    clearTimeout(timer);
-
+    const response = await fetchPublicPage(url, 6000);
     return response.ok;
   } catch {
     return false;
   }
 }
 
-async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
-  const normalized = normalizeUrl(inputUrl);
-  const parsedUrl = new URL(normalized);
-
-  if (isPrivateHostname(parsedUrl.hostname)) {
-    throw new Error("Private or local URLs are not allowed.");
-  }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
-
+async function analyzePage(
+  inputUrl: string
+): Promise<PageAnalysis> {
+  const normalized = await validatePublicUrl(inputUrl);
   const startedAt = performance.now();
 
-  let response: Response;
+  const response = await fetchPublicPage(normalized);
 
-  try {
-    response = await fetch(normalized, {
-      headers: {
-        "User-Agent": BOT_USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
-      },
-      redirect: "follow",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-
-  const responseTime = Math.round(performance.now() - startedAt);
+  const responseTime = Math.round(
+    performance.now() - startedAt
+  );
 
   if (!response.ok) {
     throw new Error(
@@ -201,19 +282,23 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
     );
   }
 
-  const contentType = response.headers.get("content-type") || "";
+  const contentType =
+    response.headers.get("content-type") || "";
 
   if (!contentType.toLowerCase().includes("text/html")) {
-    throw new Error(`${normalized} did not return an HTML page.`);
+    throw new Error(
+      `${normalized} did not return an HTML page.`
+    );
   }
 
   const html = await response.text();
   const finalUrl = response.url || normalized;
   const finalParsed = new URL(finalUrl);
 
-  const rawTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "";
-  const title = stripHtml(rawTitle);
+  const rawTitle =
+    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "";
 
+  const title = stripHtml(rawTitle);
   const metaTags = html.match(/<meta\b[^>]*>/gi) || [];
 
   let description = "";
@@ -221,12 +306,16 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
 
   for (const tag of metaTags) {
     const name = extractAttribute(tag, "name").toLowerCase();
-    const property = extractAttribute(tag, "property").toLowerCase();
+    const property = extractAttribute(
+      tag,
+      "property"
+    ).toLowerCase();
     const content = extractAttribute(tag, "content");
 
     if (
       !description &&
-      (name === "description" || property === "og:description")
+      (name === "description" ||
+        property === "og:description")
     ) {
       description = stripHtml(content);
     }
@@ -236,18 +325,24 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
     }
   }
 
-  const canonical =
-    (html.match(
-      /<link\b[^>]*rel=["'][^"']*canonical[^"']*["'][^>]*>/i
-    ) ||
-      html.match(
-        /<link\b[^>]*href=["'][^"']+["'][^>]*rel=["'][^"']*canonical[^"']*["'][^>]*>/i
-      )) !== null;
+  const canonical = (
+    html.match(/<link\b[^>]*>/gi) || []
+  ).some(
+    (tag) =>
+      extractAttribute(tag, "rel")
+        .toLowerCase()
+        .split(/\s+/)
+        .includes("canonical")
+  );
 
-  const h1Count = (html.match(/<h1\b[^>]*>/gi) || []).length;
-  const h2Count = (html.match(/<h2\b[^>]*>/gi) || []).length;
+  const h1Count =
+    (html.match(/<h1\b[^>]*>/gi) || []).length;
+
+  const h2Count =
+    (html.match(/<h2\b[^>]*>/gi) || []).length;
 
   const visibleText = stripHtml(html);
+
   const wordCount = visibleText
     ? visibleText.split(/\s+/).filter(Boolean).length
     : 0;
@@ -256,11 +351,14 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
   const images = imageTags.length;
 
   const imagesWithoutAlt = imageTags.filter((tag) => {
-    const altMatch = tag.match(/\balt\s*=\s*["']([^"']*)["']/i);
+    const altMatch = tag.match(
+      /\balt\s*=\s*["']([^"']*)["']/i
+    );
+
     return !altMatch || !altMatch[1].trim();
   }).length;
 
-  const linkTags = html.match(/<a\b[^>]*href\s*=\s*["'][^"']+["'][^>]*>/gi) || [];
+  const linkTags = html.match(/<a\b[^>]*>/gi) || [];
 
   let internalLinks = 0;
   let externalLinks = 0;
@@ -282,12 +380,25 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
       const linkUrl = new URL(href, finalUrl);
 
       if (
-        linkUrl.hostname.replace(/^www\./, "") ===
-        finalParsed.hostname.replace(/^www\./, "")
+        !["http:", "https:"].includes(linkUrl.protocol)
       ) {
-        internalLinks += 1;
+        continue;
+      }
+
+      const linkHost = linkUrl.hostname.replace(
+        /^www\./,
+        ""
+      );
+
+      const siteHost = finalParsed.hostname.replace(
+        /^www\./,
+        ""
+      );
+
+      if (linkHost === siteHost) {
+        internalLinks++;
       } else {
-        externalLinks += 1;
+        externalLinks++;
       }
     } catch {
       continue;
@@ -296,13 +407,17 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
 
   const origin = finalParsed.origin;
 
-  const [robotsTxt, sitemapXml, sitemapIndex] = await Promise.all([
-    checkTextFile(`${origin}/robots.txt`),
-    checkTextFile(`${origin}/sitemap.xml`),
-    checkTextFile(`${origin}/sitemap_index.xml`),
-  ]);
+  const [robotsTxt, sitemapXml, sitemapIndex] =
+    await Promise.all([
+      checkTextFile(`${origin}/robots.txt`),
+      checkTextFile(`${origin}/sitemap.xml`),
+      checkTextFile(`${origin}/sitemap_index.xml`),
+    ]);
 
-  const dataWithoutScore: Omit<PageAnalysis, "score"> = {
+  const dataWithoutScore: Omit<
+    PageAnalysis,
+    "score"
+  > = {
     url: normalized,
     finalUrl,
     title,
@@ -322,7 +437,10 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
     robotsTxt,
     sitemap: sitemapXml || sitemapIndex,
     responseTime,
-    htmlSizeKb: Math.round((Buffer.byteLength(html, "utf8") / 1024) * 10) / 10,
+    htmlSizeKb:
+      Math.round(
+        (Buffer.byteLength(html, "utf8") / 1024) * 10
+      ) / 10,
   };
 
   return {
@@ -334,7 +452,7 @@ async function analyzePage(inputUrl: string): Promise<PageAnalysis> {
 function buildRecommendations(
   yourSite: PageAnalysis,
   competitors: PageAnalysis[]
-) {
+): string[] {
   const recommendations: string[] = [];
 
   const maxCompetitorWords = Math.max(
@@ -432,7 +550,9 @@ function buildRecommendations(
 
   if (
     maxCompetitorInternalLinks > yourSite.internalLinks &&
-    maxCompetitorInternalLinks - yourSite.internalLinks >= 5
+    maxCompetitorInternalLinks -
+      yourSite.internalLinks >=
+      5
   ) {
     recommendations.push(
       `Your page has ${yourSite.internalLinks} internal links, while at least one competitor has ${maxCompetitorInternalLinks}. Review whether stronger contextual internal linking could improve navigation and topic discovery.`
@@ -461,13 +581,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Please sign in to use competitor analysis.",
+          error:
+            "Please sign in to use competitor analysis.",
         },
         { status: 401 }
       );
     }
 
-    const body = (await request.json()) as CompetitorRequest;
+    const body =
+      (await request.json()) as CompetitorRequest;
 
     const yourUrl = body.yourUrl?.trim();
     const competitor1 = body.competitor1?.trim();
@@ -487,7 +609,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "At least one competitor URL is required.",
+          error:
+            "At least one competitor URL is required.",
         },
         { status: 400 }
       );
@@ -499,75 +622,110 @@ export async function POST(request: Request) {
       urls.push(competitor2);
     }
 
-    const results = await Promise.allSettled(
-      urls.map((url) => analyzePage(url))
-    );
+    // Validate all targets before making external requests.
+    let organicTargets: string[];
 
-    const failures = results
-      .map((result, index) => {
-        if (result.status === "fulfilled") {
-          return null;
-        }
-
-        return {
-          url: urls[index],
-          error:
-            result.reason instanceof Error
-              ? result.reason.message
-              : "Unable to analyze this website.",
-        };
-      })
-      .filter(Boolean);
-
-    if (failures.length > 0) {
+    try {
+      organicTargets = await Promise.all(
+        urls.map((url) => validatePublicUrl(url))
+      );
+    } catch {
       return NextResponse.json(
         {
           success: false,
-          error: "One or more websites could not be analyzed.",
+          error:
+            "Please provide valid, publicly accessible website URLs.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // On-page SEO analysis.
+    const results = await Promise.allSettled(
+      organicTargets.map((url) => analyzePage(url))
+    );
+
+    const failures = results.flatMap(
+      (result, index) => {
+        if (result.status === "fulfilled") {
+          return [];
+        }
+
+        return [
+          {
+            url: urls[index],
+            error:
+              result.reason instanceof Error
+                ? result.reason.message
+                : "Unable to analyze this website.",
+          },
+        ];
+      }
+    );
+
+    // Your own website is required for on-page comparison.
+    const yourResult = results[0];
+
+    if (yourResult.status !== "fulfilled") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Your website could not be analyzed.",
           failures,
         },
         { status: 400 }
       );
     }
 
-    const fulfilled = results.map(
-      (result) =>
-        (result as PromiseFulfilledResult<PageAnalysis>).value
-    );
+    const yourSite = yourResult.value;
 
-    const yourSite = fulfilled[0];
-    const competitors = fulfilled.slice(1);
+    // Failed competitors are excluded from on-page scores.
+    const competitors = results
+      .slice(1)
+      .filter(
+        (
+          result
+        ): result is PromiseFulfilledResult<PageAnalysis> =>
+          result.status === "fulfilled"
+      )
+      .map((result) => result.value);
 
-    const { data: quotaRows, error: quotaError } = await supabase.rpc(
-      "consume_tool_usage",
-      {
+    // Existing monthly quota logic.
+    const { data: quotaRows, error: quotaError } =
+      await supabase.rpc("consume_tool_usage", {
         p_user_id: user.id,
         p_tool: "competitor_analysis",
-      }
-    );
+      });
 
     if (quotaError) {
-      console.error("Competitor quota check failed:", {
-        message: quotaError.message,
-        code: quotaError.code,
-      });
+      console.error(
+        "Competitor quota check failed:",
+        {
+          message: quotaError.message,
+          code: quotaError.code,
+        }
+      );
 
       return NextResponse.json(
         {
           success: false,
-          error: "Unable to verify your competitor analysis usage limit.",
+          error:
+            "Unable to verify your competitor analysis usage limit.",
         },
         { status: 500 }
       );
     }
 
-    const quota = Array.isArray(quotaRows) ? quotaRows[0] : null;
+    const quota = Array.isArray(quotaRows)
+      ? quotaRows[0]
+      : null;
 
     if (!quota) {
       return NextResponse.json(
         {
           success: false,
-          error: "Unable to verify your competitor analysis usage limit.",
+          error:
+            "Unable to verify your competitor analysis usage limit.",
         },
         { status: 500 }
       );
@@ -577,7 +735,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Monthly competitor analysis limit reached.",
+          error:
+            "Monthly competitor analysis limit reached.",
           quota: {
             used: quota.used,
             limit: quota.limit_value,
@@ -594,31 +753,300 @@ export async function POST(request: Request) {
       competitors
     );
 
-   return NextResponse.json({
-  success: true,
-  yourSite,
-  competitors,
-  recommendations,
-  quota: {
-    used: quota.used,
-    limit: quota.limit_value,
-    remaining: quota.remaining,
-    periodEnd: quota.period_end,
-  },
-  note:
-    "This comparison uses directly observable on-page and technical website signals. It does not estimate traffic, domain authority, keyword rankings, or backlink index metrics.",
-});
-    
+    // ====================================================
+    // DATAFORSEO ORGANIC COMPETITOR INTELLIGENCE
+    // ====================================================
+
+    // Existing API requests are reused for Keyword Gap.
+    // A blocked HTML page can still have organic data.
+
+    const organicResults = await Promise.allSettled(
+      organicTargets.map((url) =>
+        fetchCompetitorOrganicKeywords(url, {
+          locationCode: 2356,
+          languageCode: "en",
+          limit: 20,
+        })
+      )
+    );
+
+    const organicIntelligence = organicResults.map(
+      (result, index) => {
+        const domain = new URL(
+          organicTargets[index]
+        ).hostname;
+
+        if (result.status === "fulfilled") {
+          return {
+            domain,
+            available: true,
+            data: result.value,
+            error: null,
+          };
+        }
+
+        console.error(
+          "Competitor organic data unavailable:",
+          {
+            domain,
+            reason:
+              result.reason instanceof Error
+                ? result.reason.message
+                : "Unknown error",
+          }
+        );
+
+        return {
+          domain,
+          available: false,
+          data: null,
+          error: "Organic keyword data unavailable.",
+        };
+      }
+    );
+
+    // ====================================================
+    // KEYWORD GAP ANALYSIS
+    // ====================================================
+
+    const normalizeKeyword = (keyword: string) =>
+      keyword.trim().toLowerCase().replace(/\s+/g, " ");
+
+    const yourOrganicData = organicIntelligence[0]?.data;
+
+    const yourKeywordMap = new Map(
+      (yourOrganicData?.keywords ?? []).map(
+        (keyword) => [
+          normalizeKeyword(keyword.keyword),
+          keyword,
+        ]
+      )
+    );
+
+    type KeywordGapItem = {
+      keyword: string;
+      competitor: string;
+      competitorPosition: number | null;
+      yourPosition: number | null;
+      searchVolume: number;
+      cpc: number | null;
+      intent: string | null;
+      opportunity: string;
+      type: "missing" | "weak";
+    };
+
+    const keywordGap = organicIntelligence
+      .slice(1)
+      .flatMap((competitor) => {
+        if (
+          !competitor.available ||
+          !competitor.data
+        ) {
+          return [];
+        }
+
+        return competitor.data.keywords.flatMap<KeywordGapItem>(
+          (keyword) => {
+            const yourKeyword = yourKeywordMap.get(
+              normalizeKeyword(keyword.keyword)
+            );
+
+            // Missing means absent from fetched sample,
+            // NOT necessarily absent from Google rankings.
+            if (!yourKeyword) {
+              return [
+                {
+                  keyword: keyword.keyword,
+                  competitor: competitor.domain,
+                  competitorPosition:
+                    keyword.position,
+                  yourPosition: null,
+                  searchVolume:
+                    keyword.searchVolume,
+                  cpc: keyword.cpc,
+                  intent: keyword.searchIntent,
+                  opportunity:
+                    "Not found in your sampled keywords",
+                  type: "missing" as const,
+                },
+              ];
+            }
+
+            if (
+              keyword.position !== null &&
+              yourKeyword.position !== null &&
+              yourKeyword.position >
+                keyword.position
+            ) {
+              return [
+                {
+                  keyword: keyword.keyword,
+                  competitor: competitor.domain,
+                  competitorPosition:
+                    keyword.position,
+                  yourPosition:
+                    yourKeyword.position,
+                  searchVolume:
+                    keyword.searchVolume,
+                  cpc: keyword.cpc,
+                  intent: keyword.searchIntent,
+                  opportunity:
+                    "Improve existing ranking",
+                  type: "weak" as const,
+                },
+              ];
+            }
+
+            return [];
+          }
+        );
+      })
+      .sort(
+        (a, b) =>
+          b.searchVolume - a.searchVolume
+      );
+
+    // ====================================================
+    // STEP 74 - KEYWORD RELEVANCE & PRIORITY
+    // ====================================================
+
+    const seoKeywordTopics = [
+      "seo",
+      "search engine optimization",
+      "keyword research",
+      "keyword tool",
+      "rank tracker",
+      "rank tracking",
+      "backlink",
+      "competitor analysis",
+      "website audit",
+      "site audit",
+      "technical seo",
+      "organic traffic",
+      "google ranking",
+      "search console",
+      "on page optimization",
+      "digital marketing",
+      "content optimization",
+      "serp analysis",
+      "local seo",
+    ];
+
+    const calculateKeywordPriority = (
+      keyword: string,
+      searchVolume: number,
+      intent: string | null
+    ) => {
+      const normalized = keyword.toLowerCase().trim();
+
+      const matchedTopics = seoKeywordTopics.filter((topic) =>
+        normalized.includes(topic)
+      );
+
+      const relevanceScore =
+        matchedTopics.length > 0 ? 70 : 10;
+
+      const volumeScore =
+        searchVolume >= 10000
+          ? 20
+          : searchVolume >= 1000
+            ? 15
+            : searchVolume >= 100
+              ? 10
+              : 5;
+
+      const intentScore =
+        intent === "commercial" ||
+        intent === "transactional"
+          ? 10
+          : 0;
+
+      const priorityScore = Math.min(
+        100,
+        relevanceScore + volumeScore + intentScore
+      );
+
+      const relevance =
+        matchedTopics.length > 0 ? "High" : "Low";
+
+      const priority =
+        priorityScore >= 80
+          ? "High"
+          : priorityScore >= 50
+            ? "Medium"
+            : "Low";
+
+      return {
+        relevance,
+        priority,
+        priorityScore,
+        matchedTopics,
+      };
+    };
+
+    const prioritizedKeywordGap = keywordGap
+      .map((item) => ({
+        ...item,
+        ...calculateKeywordPriority(
+          item.keyword,
+          item.searchVolume,
+          item.intent
+        ),
+      }))
+      .sort(
+        (a, b) =>
+          b.priorityScore - a.priorityScore ||
+          b.searchVolume - a.searchVolume
+      );
+
+    const keywordGapSummary = {
+      totalOpportunities: keywordGap.length,
+      missingKeywords: keywordGap.filter(
+        (item) => item.type === "missing"
+      ).length,
+      weakKeywords: keywordGap.filter(
+        (item) => item.type === "weak"
+      ).length,
+      sampleBased: true,
+      yourSiteDataAvailable:
+        organicIntelligence[0]?.available ?? false,
+    };
+
+    // ====================================================
+    // SUCCESS RESPONSE
+    // ====================================================
+
+    return NextResponse.json({
+      success: true,
+      failures,
+      yourSite,
+      competitors,
+      recommendations,
+      organicIntelligence,
+      keywordGap: prioritizedKeywordGap,
+keywordGapSummary,
+      quota: {
+        used: quota.used,
+        limit: quota.limit_value,
+        remaining: quota.remaining,
+        periodEnd: quota.period_end,
+      },
+      note:
+        "On-page comparison uses directly observable website signals. Organic keyword metrics are provided by DataForSEO for India and English. Keyword Gap is based only on sampled ranking keywords, not the full Google index. Estimated traffic covers fetched keywords only, not total domain traffic. Backlink gap and content gap are not yet included.",
+    });
   } catch (error) {
-    console.error("Competitor analysis API error:", error);
+    console.error(
+      "Competitor analysis API error:",
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        error: "Unable to complete competitor analysis.",
+        error:
+          "Unable to complete competitor analysis.",
       },
       { status: 500 }
     );
   }
 }
-
