@@ -440,6 +440,118 @@ export default async function DashboardPage() {
             </div>
           </section>
 
+{/* SEO TOOLS QUICK ACCESS */}
+<section className="mt-8">
+  <div className="mb-6">
+    <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#F97316]">
+      SEOMETRICHUB Tools
+    </span>
+
+    <h2 className="mt-4 text-2xl font-black text-slate-950 sm:text-3xl">
+      Your SEO & Marketing Tools
+    </h2>
+
+    <p className="mt-2 text-sm leading-6 text-slate-600">
+      Access your SEO analysis and content creation tools
+      directly from your dashboard. Usage limits depend
+      on your subscription plan.
+    </p>
+  </div>
+
+  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    {[
+      {
+        icon: "SEO",
+        title: "Website SEO Audit",
+        description:
+          "Check technical SEO, content and optimization opportunities.",
+        href: "/audit",
+        action: "Analyze Website",
+      },
+      {
+        icon: "KW",
+        title: "Keyword Research",
+        description:
+          "Explore keyword ideas and available search metrics.",
+        href: "/keywords",
+        action: "Find Keywords",
+      },
+      {
+        icon: "BL",
+        title: "Backlink Analysis",
+        description:
+          "Review backlinks, referring domains and link signals.",
+        href: "/backlinks",
+        action: "Analyze Backlinks",
+      },
+      {
+        icon: "AI",
+        title: "AI Content Generator",
+        description:
+          "Create SEO-friendly content and marketing copy.",
+        href: "/content-generator",
+        action: "Create Content",
+      },
+      {
+        icon: "SM",
+        title: "Social Media Generator",
+        description:
+          "Generate social media posts, captions and hashtags.",
+        href: "/social-generator",
+        action: "Create Social Posts",
+      },
+      {
+        icon: "CA",
+        title: "Competitor Analysis",
+        description:
+          "Explore competitor organic keywords and opportunities.",
+        href: "/competitor-analysis",
+        action: "Analyze Competitors",
+      },
+      {
+        icon: "CG",
+        title: "Content Gap Analysis",
+        description:
+          "Find potential missing keywords and relevant content opportunities.",
+        href: "/content-gap",
+        action: "Find Content Gaps",
+      },
+      {
+        icon: "BG",
+        title: "Backlink Gap Analysis",
+        description:
+          "Compare competitor backlinks and find potential link opportunities.",
+        href: "/backlink-gap",
+        action: "Find Backlink Gaps",
+      },
+    ].map((tool) => (
+      <Link
+        key={tool.href}
+        href={tool.href}
+        className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-300 hover:shadow-lg"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-sm font-black text-[#F97316] transition-colors group-hover:bg-[#F97316] group-hover:text-white">
+          {tool.icon}
+        </div>
+
+        <h3 className="mt-5 text-lg font-black text-slate-950">
+          {tool.title}
+        </h3>
+
+        <p className="mt-3 flex-1 text-sm leading-6 text-slate-600">
+          {tool.description}
+        </p>
+
+        <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#F97316]">
+          {tool.action}
+          <span aria-hidden="true">-&gt;</span>
+        </span>
+      </Link>
+    ))}
+  </div>
+</section>
+
+
           {/* MONTHLY USAGE */}
           <section className="mt-8">
             <div className="mb-5">
