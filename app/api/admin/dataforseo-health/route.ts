@@ -66,6 +66,14 @@ export async function GET() {
     return NextResponse.json(
       {
         configured: true,
+        credentialFormat: {
+          loginLength: login.length,
+          passwordLength: password.length,
+          loginHasOuterSpaces: login !== login.trim(),
+          passwordHasOuterSpaces: password !== password.trim(),
+          loginHasQuotes: /^["']|["']$/.test(login),
+          passwordHasQuotes: /^["']|["']$/.test(password),
+        },
         httpStatus: response.status,
         authenticated: response.ok,
       },
@@ -78,3 +86,4 @@ export async function GET() {
     );
   }
 }
+
