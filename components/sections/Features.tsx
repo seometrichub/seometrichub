@@ -1,4 +1,5 @@
-﻿const features = [
+﻿
+const features = [
   {
     number: "01",
     icon: "SEO",
@@ -24,8 +25,8 @@
     icon: "BL",
     title: "Backlink Analysis",
     description:
-      "Analyze your page links, external domains and follow or nofollow link signals.",
-    link: "Analyze Links",
+      "Analyze backlink data, referring domains and important link signals.",
+    link: "Analyze Backlinks",
     href: "/backlinks",
     available: true,
   },
@@ -44,7 +45,7 @@
     icon: "SM",
     title: "Social Media Generator",
     description:
-      "Generate platform-ready social media posts, captions, hashtags and calls to action.",
+      "Generate social media posts, captions, hashtags and calls to action.",
     link: "Create Social Posts",
     href: "/social-generator",
     available: true,
@@ -54,9 +55,29 @@
     icon: "CA",
     title: "Competitor Analysis",
     description:
-      "Compare websites using directly observable on-page SEO, content and technical signals.",
+      "Analyze competitor organic keywords and discover search opportunities.",
     link: "Analyze Competitors",
     href: "/competitor-analysis",
+    available: true,
+  },
+  {
+    number: "07",
+    icon: "CG",
+    title: "Content Gap Analysis",
+    description:
+      "Discover potential missing keywords, compare competitor content opportunities and prioritize topics relevant to your business.",
+    link: "Find Content Gaps",
+    href: "/content-gap",
+    available: true,
+  },
+  {
+    number: "08",
+    icon: "BG",
+    title: "Backlink Gap Analysis",
+    description:
+      "Compare competitor backlink profiles and identify potential link-building opportunities for your website.",
+    link: "Find Backlink Gaps",
+    href: "/backlink-gap",
     available: true,
   },
 ];
@@ -78,12 +99,14 @@ export default function Features() {
 
           <h2 className="mt-6 text-4xl font-black tracking-tight text-[#0F172A] sm:text-5xl lg:text-6xl">
             Everything You Need to{" "}
-            <span className="text-[#F97316]">Grow Online</span>
+            <span className="text-[#F97316]">
+              Grow Online
+            </span>
           </h2>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[#64748B]">
-            SEO and digital marketing tools designed to help you analyze,
-            improve and grow your online presence.
+            SEO and digital marketing tools designed to help you
+            analyze, improve and grow your online presence.
           </p>
         </div>
 
