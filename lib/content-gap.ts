@@ -220,6 +220,14 @@ export function analyzeContentGap(
             level: "Unknown" as const,
             matchedTerms: [] as string[],
           };
+          // Exclude low-relevance keywords only when
+// business context is provided.
+if (
+  businessContext &&
+  relevance.level === "Low"
+) {
+  continue;
+}
 
       // Combine SEO opportunity with relevance.
       // Without business context, preserve old scoring.
