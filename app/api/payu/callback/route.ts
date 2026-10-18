@@ -417,7 +417,10 @@ if (
   Number(originalOrder.plan_id) !== planId ||
   originalOrder.provider !== "payu" ||
   originalOrder.currency !== "INR" ||
-  originalOrder.txnid !== txnid
+  originalOrder.txnid !== txnid ||
+  (originalOrder.mihpayid != null &&
+    String(originalOrder.mihpayid) !== mihpayid) ||
+  !["pending", "processing", "success"].includes(String(originalOrder.status))
 ) {
   console.error("PayU original order verification failed:", {
     txnid,
