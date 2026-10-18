@@ -67,11 +67,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!phone) {
+    if (!/^[0-9]{10}$/.test(phone)) {
       return NextResponse.json(
         {
           success: false,
-          error: "Phone number is required.",
+          error: "Enter a valid 10-digit mobile number.",
         },
         { status: 400 },
       );
@@ -126,9 +126,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       success: false,
-      error: `Selected plan is unavailable. ${
-        planError?.message || "Plan row not found."
-      }`,
+      error: "Selected plan is unavailable.",
     },
     { status: 404 },
   );
