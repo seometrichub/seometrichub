@@ -194,9 +194,27 @@ export async function POST(request: Request) {
       .digest("hex");
 
     const normalizedAppUrl = appUrl.replace(/\/+$/, "");
-    const normalizedPayuBaseUrl = payuBaseUrl.replace(/\/+$/, "");
+    let payuOrigin: string;
+    try {
+      payuOrigin = new URL(payuBaseUrl).origin;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid payment provider configuration." },
+        { status: 500 },
+      );
+    }
 
-    const paymentUrl = `${normalizedPayuBaseUrl}/_payment`;
+    if (
+      payuOrigin !== "https://test.payu.in" &&
+      payuOrigin !== "https://secure.payu.in"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Invalid payment provider configuration." },
+        { status: 500 },
+      );
+    }
+
+    const paymentUrl = `${payuOrigin}/_payment`;
 
     const surl = `${normalizedAppUrl}/api/payu/callback`;
     const furl = `${normalizedAppUrl}/api/payu/callback`;
