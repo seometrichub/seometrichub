@@ -1,3 +1,4 @@
+﻿import { verifyPayUPayment } from "@/lib/payu-verify";
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -385,13 +386,54 @@ export async function POST(request: Request) {
         303,
       );
     }
+// ============================================================
+// VERIFY ORIGINAL PAYMENT ORDER
+// ============================================================
 
+const {
+  data: originalOrder,
+  error: originalOrderError,
+} = await supabaseAdmin
+  .from("payment_transactions")
+  .select(
+    "id, user_id, plan_id, provider, txnid, mihpayid, status, amount, currency",
+  )
+  .eq("txnid", txnid)
+  .maybeSingle();
+
+if (originalOrderError || !originalOrder) {
+  console.error("PayU original order not found:", {
+    txnid,
+  });
+
+  return NextResponse.redirect(
+    safeRedirectUrl(appUrl, "/?payment=order_not_found"),
+    303,
+  );
+}
+
+if (
+  originalOrder.user_id !== userId ||
+  Number(originalOrder.plan_id) !== planId ||
+  originalOrder.provider !== "payu" ||
+  originalOrder.currency !== "INR" ||
+  originalOrder.txnid !== txnid
+) {
+  console.error("PayU original order verification failed:", {
+    txnid,
+  });
+
+  return NextResponse.redirect(
+    safeRedirectUrl(appUrl, "/?payment=transaction_mismatch"),
+    303,
+  );
+}
     // ============================================================
     // VERIFY AMOUNT
     // ============================================================
 
-    const expectedAmount =
-      Number(plan.price_inr);
+   const expectedAmount =
+  Number(originalOrder.amount);
 
     const paidAmount = Number(amount);
 
@@ -443,422 +485,65 @@ export async function POST(request: Request) {
         303,
       );
     }
-
     // ============================================================
-    // PAYMENT IDEMPOTENCY
-    //
-    // Reserve txnid before changing subscription.
-    // Unique DB constraints prevent the same PayU payment
-    // from activating the plan twice.
+    // VERIFY PAYMENT DIRECTLY WITH PAYU
     // ============================================================
 
-    const transactionNow =
-      new Date().toISOString();
+    const payuVerification = await verifyPayUPayment(
+      txnid,
+      paidAmount,
+      mihpayid,
+    );
 
-    const {
-      data: insertedTransaction,
-      error: transactionInsertError,
-    } = await supabaseAdmin
-      .from("payment_transactions")
-      .insert({
-        user_id: userId,
-        plan_id: plan.id,
-        provider: "payu",
+    if (!payuVerification.verified) {
+      console.error("PayU server verification failed:", {
         txnid,
-        mihpayid: mihpayid || null,
-        status: "processing",
-        amount: paidAmount,
-        currency: "INR",
-        raw_response: rawResponse,
-        updated_at: transactionNow,
-      })
-      .select(
-        "id, txnid, mihpayid, status",
-      )
-      .maybeSingle();
-
-    let paymentTransaction =
-      insertedTransaction;
-
-    if (transactionInsertError) {
-      if (
-        transactionInsertError.code !==
-        "23505"
-      ) {
-        console.error(
-          "PayU transaction insert failed:",
-          transactionInsertError,
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            "/?payment=transaction_error",
-          ),
-          303,
-        );
-      }
-
-      // ----------------------------------------------------------
-      // DUPLICATE CALLBACK
-      // First try exact merchant txnid.
-      // ----------------------------------------------------------
-
-      const {
-        data: existingByTxnid,
-        error: existingTxnidError,
-      } = await supabaseAdmin
-        .from("payment_transactions")
-        .select(
-          "id, user_id, plan_id, txnid, mihpayid, status",
-        )
-        .eq("txnid", txnid)
-        .maybeSingle();
-
-      if (existingTxnidError) {
-        console.error(
-          "PayU existing transaction lookup failed:",
-          existingTxnidError,
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            "/?payment=transaction_error",
-          ),
-          303,
-        );
-      }
-
-      let existingTransaction =
-        existingByTxnid;
-
-      // If duplicate was caused by mihpayid,
-      // find that row as fallback.
-      if (
-        !existingTransaction &&
-        mihpayid
-      ) {
-        const {
-          data: existingByMihpayid,
-          error: existingMihpayidError,
-        } = await supabaseAdmin
-          .from("payment_transactions")
-          .select(
-            "id, user_id, plan_id, txnid, mihpayid, status",
-          )
-          .eq("mihpayid", mihpayid)
-          .maybeSingle();
-
-        if (existingMihpayidError) {
-          console.error(
-            "PayU mihpayid lookup failed:",
-            existingMihpayidError,
-          );
-
-          return NextResponse.redirect(
-            safeRedirectUrl(
-              appUrl,
-              "/?payment=transaction_error",
-            ),
-            303,
-          );
-        }
-
-        existingTransaction =
-          existingByMihpayid;
-      }
-
-      if (!existingTransaction) {
-        console.error(
-          "PayU duplicate transaction could not be resolved.",
-          {
-            txnid,
-            mihpayid,
-          },
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            "/?payment=transaction_error",
-          ),
-          303,
-        );
-      }
-
-      // Security check:
-      // duplicate payment must belong to same user + plan.
-      if (
-        existingTransaction.user_id !==
-          userId ||
-        Number(
-          existingTransaction.plan_id,
-        ) !== Number(plan.id)
-      ) {
-        console.error(
-          "PayU duplicate transaction metadata mismatch.",
-          {
-            txnid,
-            mihpayid,
-          },
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            "/?payment=transaction_mismatch",
-          ),
-          303,
-        );
-      }
-
-      // Already completed successfully:
-      // do NOT update subscription again.
-      if (
-        existingTransaction.status ===
-        "success"
-      ) {
-        console.log(
-          "PayU duplicate successful callback ignored:",
-          {
-            txnid,
-            mihpayid,
-          },
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            `/?payment=success&plan=${encodeURIComponent(
-              plan.code,
-            )}`,
-          ),
-          303,
-        );
-      }
-
-      // Another callback is already processing.
-      if (
-        existingTransaction.status ===
-        "processing"
-      ) {
-        console.log(
-          "PayU transaction is already processing:",
-          {
-            txnid,
-            mihpayid,
-          },
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            "/?payment=processing",
-          ),
-          303,
-        );
-      }
-
-      // Previous subscription update failed.
-      // Claim the failed transaction for one retry.
-      const {
-        data: recoveredTransaction,
-        error: recoveryError,
-      } = await supabaseAdmin
-        .from("payment_transactions")
-        .update({
-          status: "processing",
-          raw_response: rawResponse,
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq(
-          "id",
-          existingTransaction.id,
-        )
-        .eq(
-          "status",
-          "subscription_error",
-        )
-        .select(
-          "id, txnid, mihpayid, status",
-        )
-        .maybeSingle();
-
-      if (
-        recoveryError ||
-        !recoveredTransaction
-      ) {
-        console.error(
-          "PayU transaction recovery failed:",
-          recoveryError,
-        );
-
-        return NextResponse.redirect(
-          safeRedirectUrl(
-            appUrl,
-            "/?payment=processing",
-          ),
-          303,
-        );
-      }
-
-      paymentTransaction =
-        recoveredTransaction;
-    }
-
-    if (!paymentTransaction) {
-      console.error(
-        "PayU payment transaction was not reserved.",
-      );
+        reason: payuVerification.reason,
+      });
 
       return NextResponse.redirect(
         safeRedirectUrl(
           appUrl,
-          "/?payment=transaction_error",
+          "/?payment=verification_failed",
         ),
         303,
       );
     }
-
     // ============================================================
-    // CALCULATE SUBSCRIPTION PERIOD
-    // ============================================================
-
-    const now = new Date();
-
-const originalDay = now.getUTCDate();
-
-const periodEnd = new Date(
-  Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth() + durationMonths,
-    1,
-    now.getUTCHours(),
-    now.getUTCMinutes(),
-    now.getUTCSeconds(),
-    now.getUTCMilliseconds(),
-  ),
-);
-
-const lastDayOfTargetMonth = new Date(
-  Date.UTC(
-    periodEnd.getUTCFullYear(),
-    periodEnd.getUTCMonth() + 1,
-    0,
-  ),
-).getUTCDate();
-
-periodEnd.setUTCDate(
-  Math.min(originalDay, lastDayOfTargetMonth),
-);
-    // ============================================================
-    // UPDATE USER SUBSCRIPTION
+    // ATOMIC PAYMENT FINALIZATION
     // ============================================================
 
-    const {
-      data: updatedSubscription,
-      error: subscriptionError,
-    } = await supabaseAdmin
-      .from("subscriptions")
-      .update({
-        plan_id: plan.id,
-        status: "active",
-        started_at: now.toISOString(),
-        current_period_start:
-          now.toISOString(),
-        current_period_end:
-          periodEnd.toISOString(),
-        subscription_end:
-          periodEnd.toISOString(),
-        payment_provider: "payu",
-        payment_subscription_id: txnid,
-        payment_id:
-          mihpayid || txnid,
-        updated_at: now.toISOString(),
-      })
-      .eq("user_id", userId)
-      .select(
-        "user_id, plan_id, status, current_period_end, payment_provider, payment_id",
-      )
-      .maybeSingle();
+    const { data: finalizeResult, error: finalizeError } =
+      await supabaseAdmin.rpc("finalize_payu_payment", {
+        p_txnid: txnid,
+        p_mihpayid: mihpayid,
+        p_user_id: userId,
+        p_plan_id: plan.id,
+        p_plan_code: plan.code,
+        p_amount: paidAmount,
+        p_productinfo: productinfo,
+      });
+
+    if (finalizeError) {
+      console.error("PayU atomic finalization failed:", finalizeError);
+
+      return NextResponse.redirect(
+        safeRedirectUrl(appUrl, "/?payment=finalize_error"),
+        303,
+      );
+    }
 
     if (
-      subscriptionError ||
-      !updatedSubscription
+      finalizeResult !== "success" &&
+      finalizeResult !== "already_success"
     ) {
-      console.error(
-        "PayU callback subscription update failed:",
-        subscriptionError,
-      );
-
-      const {
-        error: transactionFailureError,
-      } = await supabaseAdmin
-        .from("payment_transactions")
-        .update({
-          status:
-            "subscription_error",
-          raw_response: rawResponse,
-          updated_at:
-            new Date().toISOString(),
-        })
-        .eq(
-          "id",
-          paymentTransaction.id,
-        );
-
-      if (transactionFailureError) {
-        console.error(
-          "PayU transaction failure status update failed:",
-          transactionFailureError,
-        );
-      }
+      console.error("PayU payment not finalized:", {
+        txnid,
+        result: finalizeResult,
+      });
 
       return NextResponse.redirect(
-        safeRedirectUrl(
-          appUrl,
-          updatedSubscription
-            ? "/?payment=subscription_error"
-            : "/?payment=subscription_not_found",
-        ),
-        303,
-      );
-    }
-
-    // ============================================================
-    // MARK PAYMENT SUCCESS
-    // ============================================================
-
-    const {
-      error: transactionSuccessError,
-    } = await supabaseAdmin
-      .from("payment_transactions")
-      .update({
-        status: "success",
-        raw_response: rawResponse,
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq(
-        "id",
-        paymentTransaction.id,
-      );
-
-    if (transactionSuccessError) {
-      console.error(
-        "PayU transaction success status update failed:",
-        transactionSuccessError,
-      );
-
-      // Subscription is already activated.
-      // Do not activate it a second time here.
-      return NextResponse.redirect(
-        safeRedirectUrl(
-          appUrl,
-          "/?payment=transaction_finalize_error",
-        ),
+        safeRedirectUrl(appUrl, "/?payment=finalize_rejected"),
         303,
       );
     }
@@ -867,25 +552,17 @@ periodEnd.setUTCDate(
     // SUCCESS
     // ============================================================
 
-    console.log(
-      "PayU payment verified and subscription activated:",
-      {
-        userId,
-        planCode: plan.code,
-        planName: plan.name,
-        txnid,
-        mihpayid,
-        subscriptionEnd:
-          updatedSubscription.current_period_end,
-      },
-    );
+    console.log("PayU payment finalized:", {
+      userId,
+      planCode: plan.code,
+      txnid,
+      result: finalizeResult,
+    });
 
     return NextResponse.redirect(
       safeRedirectUrl(
         appUrl,
-        `/?payment=success&plan=${encodeURIComponent(
-          plan.code,
-        )}`,
+        `/?payment=success&plan=${encodeURIComponent(plan.code)}`,
       ),
       303,
     );

@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "crypto";
+﻿import { createHash, randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
@@ -67,11 +67,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!phone) {
+    if (!/^[0-9]{10}$/.test(phone)) {
       return NextResponse.json(
         {
           success: false,
-          error: "Phone number is required.",
+          error: "A valid 10-digit phone number is required.",
         },
         { status: 400 },
       );
@@ -126,9 +126,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       success: false,
-      error: `Selected plan is unavailable. ${
-        planError?.message || "Plan row not found."
-      }`,
+      error: "Selected plan is unavailable.",
     },
     { status: 404 },
   );
@@ -202,6 +200,32 @@ export async function POST(request: Request) {
 
     const surl = `${normalizedAppUrl}/api/payu/callback`;
     const furl = `${normalizedAppUrl}/api/payu/callback`;
+    // Save payment order before redirecting to PayU
+const { error: pendingOrderError } = await supabaseAdmin
+  .from("payment_transactions")
+  .insert({
+    user_id: user.id,
+    plan_id: plan.id,
+    provider: "payu",
+    txnid,
+    mihpayid: null,
+    status: "pending",
+    amount: amountNumber,
+    currency: "INR",
+    updated_at: new Date().toISOString(),
+  });
+
+if (pendingOrderError) {
+  console.error("PayU pending order creation failed:", pendingOrderError);
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: "Unable to create payment order. Please try again.",
+    },
+    { status: 500 },
+  );
+}
 
     return NextResponse.json({
       success: true,
@@ -242,3 +266,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
