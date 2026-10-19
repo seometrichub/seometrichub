@@ -29,7 +29,16 @@ export async function verifyPayUPayment(
     return { verified: false, reason: "invalid_input" };
   }
 
-  const origin = new URL(baseUrl).origin;
+  let origin: string;
+  try {
+    const endpoint = new URL(baseUrl);
+    if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
+      return { verified: false, reason: "invalid_endpoint" };
+    }
+    origin = endpoint.origin;
+  } catch {
+    return { verified: false, reason: "invalid_endpoint" };
+  }
 
   if (
     origin !== "https://test.payu.in" &&
