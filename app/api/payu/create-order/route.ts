@@ -214,6 +214,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Safety: the public staging host must never initiate a live PayU payment.
+    // Validate the browser's request origin rather than trusting a client-supplied flag.
+    const requestOrigin = request.headers.get("origin");
+    let isStagingRequest = false;
+    if (requestOrigin) {
+      try {
+        isStagingRequest = new URL(requestOrigin).hostname === "staging.seometrichub.com";
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Invalid request origin." },
+          { status: 400 },
+        );
+      }
+    }
+    if (
+      (isStagingRequest || new URL(normalizedAppUrl).hostname === "staging.seometrichub.com") &&
+      payuOrigin !== "https://test.payu.in"
+    ) {
+      console.error("Blocked live PayU checkout from staging.");
+      return NextResponse.json(
+        { success: false, error: "Staging payments require PayU Sandbox configuration." },
+        { status: 503 },
+      );
+    }
+
     const paymentUrl = `${payuOrigin}/_payment`;
 
     const surl = `${normalizedAppUrl}/api/payu/callback`;
