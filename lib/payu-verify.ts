@@ -47,6 +47,16 @@ export async function verifyPayUPayment(
     return { verified: false, reason: "invalid_endpoint" };
   }
 
+  // Independent fail-closed protection for the server-to-server verification path.
+  // A staging build must never query PayU's live verification endpoint.
+  if (
+    (process.env.VERCEL_GIT_COMMIT_REF === "backup/local-payu-work-20261018" ||
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\\/+$/, "") === "https://staging.seometrichub.com") &&
+    origin !== "https://test.payu.in"
+  ) {
+    return { verified: false, reason: "unsafe_staging_endpoint" };
+  }
+
   const command = "verify_payment";
 
   const hash = createHash("sha512")
