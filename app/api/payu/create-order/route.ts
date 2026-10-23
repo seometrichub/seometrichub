@@ -214,29 +214,34 @@ export async function POST(request: Request) {
       );
     }
 
-    // Safety: the public staging host must never initiate a live PayU payment.
-    // Validate the browser's request origin rather than trusting a client-supplied flag.
+    // Fail closed for staging deployments, including when an Origin header is absent.
+    // Vercel's deployment branch is server-controlled; browser headers are not.
+    const stagingBranch = "backup/local-payu-work-20261018";
+    const isStagingDeployment =
+      process.env.VERCEL_GIT_COMMIT_REF === stagingBranch ||
+      process.env.VERCEL_BRANCH_URL?.startsWith("seometrichub-pl1z-git-backup-") === true;
+    const isStagingAppUrl = new URL(normalizedAppUrl).hostname === "staging.seometrichub.com";
+    const requestHost = new URL(request.url).hostname;
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
     const requestOrigin = request.headers.get("origin");
-    let isStagingRequest = false;
-    if (requestOrigin) {
-      try {
-        isStagingRequest = new URL(requestOrigin).hostname === "staging.seometrichub.com";
-      } catch {
+    let originHost = "";
+    try {
+      originHost = requestOrigin ? new URL(requestOrigin).hostname : "";
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid request origin." },
+        { status: 400 },
+      );
+    }
+    const isStagingRequest = [requestHost, forwardedHost, originHost].includes("staging.seometrichub.com");
+    if (isStagingDeployment || isStagingAppUrl || isStagingRequest) {
+      if (payuOrigin !== "https://test.payu.in" || !isStagingAppUrl) {
+        console.error("Blocked unsafe PayU configuration on staging.");
         return NextResponse.json(
-          { success: false, error: "Invalid request origin." },
-          { status: 400 },
+          { success: false, error: "Staging checkout requires PayU Sandbox and staging callback URLs." },
+          { status: 503 },
         );
       }
-    }
-    if (
-      (isStagingRequest || new URL(normalizedAppUrl).hostname === "staging.seometrichub.com") &&
-      payuOrigin !== "https://test.payu.in"
-    ) {
-      console.error("Blocked live PayU checkout from staging.");
-      return NextResponse.json(
-        { success: false, error: "Staging payments require PayU Sandbox configuration." },
-        { status: 503 },
-      );
     }
 
     const paymentUrl = `${payuOrigin}/_payment`;
