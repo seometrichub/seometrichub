@@ -51,7 +51,7 @@ export async function verifyPayUPayment(
   // A staging build must never query PayU's live verification endpoint.
   if (
     (process.env.VERCEL_GIT_COMMIT_REF === "backup/local-payu-work-20261018" ||
-      process.env.NEXT_PUBLIC_APP_URL?.replace(/\\/+$/, "") === "https://staging.seometrichub.com") &&
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") === "https://staging.seometrichub.com") &&
     origin !== "https://test.payu.in"
   ) {
     return { verified: false, reason: "unsafe_staging_endpoint" };
