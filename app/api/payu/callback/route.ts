@@ -47,6 +47,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // Prevent a staging deployment from verifying or finalizing live payments.
+    // This also fails closed if its callback base URL is misconfigured.
+    if (process.env.VERCEL_GIT_COMMIT_REF === "backup/local-payu-work-20261018" ||
+        new URL(request.url).hostname === "staging.seometrichub.com") {
+      let sandboxConfigured = false;
+      try {
+        sandboxConfigured =
+          new URL(process.env.PAYU_BASE_URL || "").origin === "https://test.payu.in" &&
+          new URL(appUrl).origin === "https://staging.seometrichub.com";
+      } catch {
+        sandboxConfigured = false;
+      }
+      if (!sandboxConfigured) {
+        console.error("Blocked PayU callback with unsafe staging configuration.");
+        return NextResponse.json(
+          { success: false, error: "Unsafe staging payment configuration." },
+          { status: 503 },
+        );
+      }
+    }
+
     // ============================================================
     // READ PAYU RESPONSE
     // ============================================================
