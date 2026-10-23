@@ -219,6 +219,26 @@ export default function Pricing() {
         return;
       }
 
+      // Defense in depth: never submit a live PayU payment from staging.
+      if (window.location.hostname === "staging.seometrichub.com") {
+        let destination: URL;
+        try {
+          destination = new URL(data.paymentUrl);
+        } catch {
+          setError("Invalid PayU checkout URL.");
+          return;
+        }
+        if (
+          destination.origin !== "https://test.payu.in" ||
+          destination.pathname !== "/_payment" ||
+          data.fields.surl !== "https://staging.seometrichub.com/api/payu/callback" ||
+          data.fields.furl !== "https://staging.seometrichub.com/api/payu/callback"
+        ) {
+          setError("Unsafe payment configuration blocked. Sandbox checkout is required.");
+          return;
+        }
+      }
+
       const form = document.createElement("form");
 
       form.method = "POST";
