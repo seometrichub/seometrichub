@@ -456,18 +456,21 @@ if (
     // VERIFY AMOUNT
     // ============================================================
 
-   const expectedAmount =
-  Number(originalOrder.amount);
-
+    const expectedAmount = Number(originalOrder.amount);
+    const configuredPlanAmount = Number(plan.price_inr);
     const paidAmount = Number(amount);
 
+    // Bind the callback to both the persisted order and the currently active
+    // plan price. This prevents a valid callback for a stale/altered order
+    // from granting a subscription at a different price.
     if (
       !Number.isFinite(expectedAmount) ||
+      !Number.isFinite(configuredPlanAmount) ||
       !Number.isFinite(paidAmount) ||
       expectedAmount <= 0 ||
-      Math.abs(
-        expectedAmount - paidAmount,
-      ) > 0.01
+      configuredPlanAmount <= 0 ||
+      Math.abs(expectedAmount - configuredPlanAmount) > 0.01 ||
+      Math.abs(expectedAmount - paidAmount) > 0.01
     ) {
       console.error(
         "PayU callback amount mismatch.",
