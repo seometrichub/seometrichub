@@ -99,7 +99,9 @@ export async function POST(request: Request) {
       }),
       cache: "no-store", signal: AbortSignal.timeout(20000),
     });
-    const payuData = await createResponse.json().catch(() => null) as PayUCreateResponse | null;
+    const createResponseText = await createResponse.text();
+    let payuData: PayUCreateResponse | null = null;
+    try { payuData = JSON.parse(createResponseText) as PayUCreateResponse; } catch { payuData = null; }
     const result = payuData?.result;
     const paymentUrl = result?.paymentLink;
     const invoiceNumber = result?.invoiceNumber || txnid;
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
     }
 
     if (!createResponse.ok || payuData?.status !== 0 || !paymentUrl || !safePaymentUrl || invoiceNumber !== txnid) {
-      console.error("PayU Payment Link creation failed:", { httpStatus: createResponse.status, payuStatus: payuData?.status, message: payuData?.message });
+      console.error("PayU Payment Link creation failed:", { httpStatus: createResponse.status, contentType: createResponse.headers.get("content-type"), payuStatus: payuData?.status, message: payuData?.message, responseBody: createResponseText.slice(0, 2000) });
       await admin.from("payment_transactions").update({
         status: "error",
         raw_response: { integration: "payment_links", stage: "link_creation_failed", httpStatus: createResponse.status, payuStatus: payuData?.status, message: payuData?.message || null },
