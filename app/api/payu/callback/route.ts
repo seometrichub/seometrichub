@@ -1,4 +1,4 @@
-﻿import { verifyPayUPayment } from "@/lib/payu-verify";
+﻿import { fetchVerifiedPayUTransaction, verifyPayUPayment } from "@/lib/payu-verify";
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -12,6 +12,78 @@ function sha512(value: string) {
     .update(value)
     .digest("hex")
     .toLowerCase();
+}
+
+
+export async function GET(request: Request) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const redirect = (path: string) => NextResponse.redirect(safeRedirectUrl(appUrl || "https://staging.seometrichub.com", path), 303);
+  try {
+    if (!appUrl || new URL(appUrl).origin !== "https://staging.seometrichub.com" ||
+        (process.env.VERCEL_GIT_COMMIT_REF && process.env.VERCEL_GIT_COMMIT_REF !== "backup/local-payu-work-20261018")) {
+      return NextResponse.json({ success: false, error: "Payment verification is staging-only." }, { status: 503 });
+    }
+    const url = new URL(request.url);
+    const txnid = (url.searchParams.get("invoice") || url.searchParams.get("txnid") || "").trim();
+    if (!/^[A-Za-z0-9_-]{8,80}$/.test(txnid)) return redirect("/?payment=invalid_invoice");
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceRoleKey) return redirect("/?payment=configuration_error");
+    const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+
+    const { data: order, error: orderError } = await admin.from("payment_transactions")
+      .select("id,user_id,plan_id,provider,txnid,status,amount,currency,mihpayid")
+      .eq("txnid", txnid).maybeSingle();
+    if (orderError || !order || order.provider !== "payu" || order.currency !== "INR" ||
+        !["pending","processing","success"].includes(String(order.status))) {
+      return redirect("/?payment=order_not_found");
+    }
+
+    const { data: plan, error: planError } = await admin.from("plans")
+      .select("id,code,name,price_inr,duration_months,is_active")
+      .eq("id", order.plan_id).eq("is_active", true).single();
+    if (planError || !plan) return redirect("/?payment=plan_error");
+    const expectedAmount = Number(order.amount);
+    if (!Number.isFinite(expectedAmount) || expectedAmount <= 0 ||
+        Math.abs(expectedAmount - Number(plan.price_inr)) > 0.01) {
+      return redirect("/?payment=amount_mismatch");
+    }
+
+    const verification = await fetchVerifiedPayUTransaction(txnid, expectedAmount);
+    if (!verification.verified || !verification.transaction) {
+      console.warn("PayU Payment Link reconciliation not verified:", { txnid, reason: verification.reason });
+      return redirect("/?payment=verification_pending");
+    }
+    const paid = verification.transaction;
+    if (order.mihpayid && String(order.mihpayid) !== paid.mihpayid) {
+      return redirect("/?payment=transaction_mismatch");
+    }
+
+    const { data: finalizeResult, error: finalizeError } = await admin.rpc("finalize_payu_payment", {
+      p_txnid: txnid,
+      p_mihpayid: paid.mihpayid,
+      p_user_id: order.user_id,
+      p_plan_id: plan.id,
+      p_plan_code: plan.code,
+      p_amount: paid.amount,
+      p_productinfo: paid.productinfo,
+    });
+    if (finalizeError || (finalizeResult !== "success" && finalizeResult !== "already_success")) {
+      console.error("PayU Payment Link finalization failed:", { txnid, error: finalizeError, result: finalizeResult });
+      return redirect("/?payment=finalize_error");
+    }
+
+    await admin.from("payment_transactions").update({
+      status: "success", mihpayid: paid.mihpayid,
+      raw_response: { integration: "payment_links", stage: "verified_and_finalized", verifiedTransaction: paid },
+      updated_at: new Date().toISOString(),
+    }).eq("txnid", txnid);
+    return redirect(`/?payment=success&plan=${encodeURIComponent(plan.code)}`);
+  } catch (error) {
+    console.error("PayU Payment Link return verification error:", error);
+    return redirect("/?payment=callback_error");
+  }
 }
 
 export async function POST(request: Request) {
