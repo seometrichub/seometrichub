@@ -1,317 +1,129 @@
-﻿import { createHash, randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
-
 import { createClient } from "@/lib/supabase/server";
 
-const ALLOWED_PAID_PLANS = [
-  "pro_monthly",
-  "pro_3_months",
-  "pro_6_months",
-  "pro_12_months",
-] as const;
-
+const ALLOWED_PAID_PLANS = ["pro_monthly", "pro_3_months", "pro_6_months", "pro_12_months"] as const;
 type PaidPlanCode = (typeof ALLOWED_PAID_PLANS)[number];
-
 function isPaidPlanCode(value: string): value is PaidPlanCode {
   return ALLOWED_PAID_PLANS.includes(value as PaidPlanCode);
 }
 
+type PayUCreateResponse = {
+  status?: number;
+  message?: string;
+  result?: { invoiceNumber?: string; paymentLink?: string; totalAmount?: number };
+};
+
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Please sign in before starting payment.",
-        },
-        { status: 401 },
-      );
-    }
-
-    const body = await request.json().catch(() => null);
-
-    const planCode =
-      typeof body?.planCode === "string" ? body.planCode.trim() : "";
-
-    const firstName =
-      typeof body?.firstName === "string" ? body.firstName.trim() : "";
-
-    const phone =
-      typeof body?.phone === "string" ? body.phone.trim() : "";
-
-    if (!isPaidPlanCode(planCode)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid paid plan selected.",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!firstName) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "First name is required.",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!/^[0-9]{10}$/.test(phone)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "A valid 10-digit phone number is required.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const merchantKey = process.env.PAYU_MERCHANT_KEY;
-    const merchantSalt = process.env.PAYU_MERCHANT_SALT;
-    const payuBaseUrl = process.env.PAYU_BASE_URL;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-
+    // This endpoint intentionally supports sandbox only until the full payment
+    // verification/finalization flow has been validated in staging.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
+    const clientId = process.env.PAYU_CLIENT_ID;
+    const clientSecret = process.env.PAYU_CLIENT_SECRET;
+    const merchantId = process.env.PAYU_MERCHANT_ID;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (
-      !merchantKey ||
-      !merchantSalt ||
-      !payuBaseUrl ||
-      !appUrl ||
-      !supabaseUrl ||
-      !serviceRoleKey
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Payment configuration is incomplete.",
-        },
-        { status: 500 },
-      );
+    if (!appUrl || !clientId || !clientSecret || !merchantId || !supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ success: false, error: "Payment configuration is incomplete." }, { status: 503 });
+    }
+    if (new URL(appUrl).hostname !== "staging.seometrichub.com" ||
+        (process.env.VERCEL_GIT_COMMIT_REF && process.env.VERCEL_GIT_COMMIT_REF !== "backup/local-payu-work-20261018")) {
+      return NextResponse.json({ success: false, error: "Payment Links are currently enabled only on staging." }, { status: 503 });
     }
 
-    const supabaseAdmin = createSupabaseAdmin(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    );
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return NextResponse.json({ success: false, error: "Please sign in before starting payment." }, { status: 401 });
 
-    const { data: plan, error: planError } = await supabaseAdmin
-      .from("plans")
+    const body = await request.json().catch(() => null);
+    const planCode = typeof body?.planCode === "string" ? body.planCode.trim() : "";
+    const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : "";
+    const phone = typeof body?.phone === "string" ? body.phone.trim() : "";
+    if (!isPaidPlanCode(planCode)) return NextResponse.json({ success: false, error: "Invalid paid plan selected." }, { status: 400 });
+    if (!firstName) return NextResponse.json({ success: false, error: "First name is required." }, { status: 400 });
+    if (!/^[0-9]{10}$/.test(phone)) return NextResponse.json({ success: false, error: "A valid 10-digit phone number is required." }, { status: 400 });
+    if (!user.email) return NextResponse.json({ success: false, error: "Your account needs an email address." }, { status: 400 });
+
+    const admin = createSupabaseAdmin(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { data: plan, error: planError } = await admin.from("plans")
       .select("id, code, name, price_inr, duration_months, is_active")
-      .eq("code", planCode)
-      .eq("is_active", true)
-      .single();
+      .eq("code", planCode).eq("is_active", true).single();
+    if (planError || !plan) return NextResponse.json({ success: false, error: "Selected plan is unavailable." }, { status: 404 });
 
-  if (planError || !plan) {
-  console.error("PayU plan lookup failed:", planError);
+    const amount = Number(plan.price_inr);
+    if (!Number.isSafeInteger(amount) || amount < 1) return NextResponse.json({ success: false, error: "Plan amount must be a whole number of INR." }, { status: 400 });
 
-  return NextResponse.json(
-    {
-      success: false,
-      error: "Selected plan is unavailable.",
-    },
-    { status: 404 },
-  );
-}
-    const amountNumber = Number(plan.price_inr);
-
-    if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Selected plan price is invalid.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const email = user.email?.trim();
-
-    if (!email) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Your account does not have a valid email address.",
-        },
-        { status: 400 },
-      );
-    }
-
-    const amount = amountNumber.toFixed(2);
-
-    const txnid = `SMH-${Date.now()}-${randomUUID()
-      .replace(/-/g, "")
-      .slice(0, 8)}`;
-
-    const productinfo = `SEOMETRICHUB ${plan.name}`;
-
-    const udf1 = user.id;
-    const udf2 = String(plan.id);
-    const udf3 = String(plan.code);
-    const udf4 = "";
-    const udf5 = "";
-
-    const hashString = [
-      merchantKey,
-      txnid,
-      amount,
-      productinfo,
-      firstName,
-      email,
-      udf1,
-      udf2,
-      udf3,
-      udf4,
-      udf5,
-      "",
-      "",
-      "",
-      "",
-      "",
-      merchantSalt,
-    ].join("|");
-
-    const hash = createHash("sha512")
-      .update(hashString)
-      .digest("hex");
-
-    const normalizedAppUrl = appUrl.replace(/\/+$/, "");
-    let payuOrigin: string;
-    try {
-      payuOrigin = new URL(payuBaseUrl).origin;
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid payment provider configuration." },
-        { status: 500 },
-      );
-    }
-
-    if (
-      payuOrigin !== "https://test.payu.in" &&
-      payuOrigin !== "https://secure.payu.in"
-    ) {
-      return NextResponse.json(
-        { success: false, error: "Invalid payment provider configuration." },
-        { status: 500 },
-      );
-    }
-
-    // Fail closed for staging deployments, including when an Origin header is absent.
-    // Vercel's deployment branch is server-controlled; browser headers are not.
-    const stagingBranch = "backup/local-payu-work-20261018";
-    const isStagingDeployment =
-      process.env.VERCEL_GIT_COMMIT_REF === stagingBranch ||
-      process.env.VERCEL_BRANCH_URL?.startsWith("seometrichub-pl1z-git-backup-") === true;
-    const isStagingAppUrl = new URL(normalizedAppUrl).hostname === "staging.seometrichub.com";
-    const requestHost = new URL(request.url).hostname;
-    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-    const requestOrigin = request.headers.get("origin");
-    let originHost = "";
-    try {
-      originHost = requestOrigin ? new URL(requestOrigin).hostname : "";
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid request origin." },
-        { status: 400 },
-      );
-    }
-    const isStagingRequest = [requestHost, forwardedHost, originHost].includes("staging.seometrichub.com");
-    if (isStagingDeployment || isStagingAppUrl || isStagingRequest) {
-      if (payuOrigin !== "https://test.payu.in" || !isStagingAppUrl) {
-        console.error("Blocked unsafe PayU configuration on staging.");
-        return NextResponse.json(
-          { success: false, error: "Staging checkout requires PayU Sandbox and staging callback URLs." },
-          { status: 503 },
-        );
-      }
-    }
-
-    const paymentUrl = `${payuOrigin}/_payment`;
-
-    const surl = `${normalizedAppUrl}/api/payu/callback`;
-    const furl = `${normalizedAppUrl}/api/payu/callback`;
-    // Save payment order before redirecting to PayU
-const { error: pendingOrderError } = await supabaseAdmin
-  .from("payment_transactions")
-  .insert({
-    user_id: user.id,
-    plan_id: plan.id,
-    provider: "payu",
-    txnid,
-    mihpayid: null,
-    status: "pending",
-    amount: amountNumber,
-    currency: "INR",
-    updated_at: new Date().toISOString(),
-  });
-
-if (pendingOrderError) {
-  console.error("PayU pending order creation failed:", pendingOrderError);
-
-  return NextResponse.json(
-    {
-      success: false,
-      error: "Unable to create payment order. Please try again.",
-    },
-    { status: 500 },
-  );
-}
-
-    return NextResponse.json({
-      success: true,
-      paymentUrl,
-      fields: {
-        key: merchantKey,
-        txnid,
-        amount,
-        productinfo,
-        firstname: firstName,
-        email,
-        phone,
-        surl,
-        furl,
-        udf1,
-        udf2,
-        udf3,
-        udf4,
-        udf5,
-        hash,
-      },
-      transaction: {
-        txnid,
-        planCode: plan.code,
-        planName: plan.name,
-        amount,
-      },
+    const txnid = `SMH${Date.now()}${randomUUID().replace(/-/g, "").slice(0, 10)}`;
+    const { error: insertError } = await admin.from("payment_transactions").insert({
+      user_id: user.id, plan_id: plan.id, provider: "payu_payment_link",
+      txnid, mihpayid: null, status: "pending", amount, currency: "INR",
+      raw_response: { integration: "payment_links", stage: "created_locally" },
     });
-  } catch (error) {
-    console.error("PayU create-order error:", error);
+    if (insertError) {
+      console.error("Payment link pending order insert failed:", insertError);
+      return NextResponse.json({ success: false, error: "Unable to create payment order." }, { status: 500 });
+    }
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unable to start PayU payment.",
-      },
-      { status: 500 },
-    );
+    const tokenResponse = await fetch("https://uat-accounts.payu.in/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId, client_secret: clientSecret,
+        grant_type: "client_credentials", scope: "create_payment_links",
+      }),
+      cache: "no-store", signal: AbortSignal.timeout(15000),
+    });
+    const tokenData = await tokenResponse.json().catch(() => null);
+    const accessToken = typeof tokenData?.access_token === "string" ? tokenData.access_token : "";
+    if (!tokenResponse.ok || !accessToken) {
+      console.error("PayU OAuth token request failed:", { status: tokenResponse.status, error: tokenData?.error });
+      await admin.from("payment_transactions").update({ status: "error", raw_response: { integration: "payment_links", stage: "oauth_failed", httpStatus: tokenResponse.status } }).eq("txnid", txnid);
+      return NextResponse.json({ success: false, error: "PayU authentication failed. Check the sandbox API credentials and permissions." }, { status: 502 });
+    }
+
+    const createResponse = await fetch("https://uatoneapi.payu.in/payment-links/", {
+      method: "POST",
+      headers: { "merchantId": merchantId, "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        invoiceNumber: txnid, isAmountFilledByCustomer: false, subAmount: amount,
+        isPartialPaymentAllowed: false, maxPaymentsAllowed: 1,
+        description: `SEOMETRICHUB ${plan.name}`, source: "API", currency: "INR",
+        successURL: `${appUrl}/?payment=pending&invoice=${encodeURIComponent(txnid)}`,
+        failureURL: `${appUrl}/?payment=failed&invoice=${encodeURIComponent(txnid)}`,
+        customer: { name: firstName, email: user.email, phone },
+        udf: { udf1: user.id, udf2: String(plan.id), udf3: String(plan.code), udf4: txnid },
+      }),
+      cache: "no-store", signal: AbortSignal.timeout(20000),
+    });
+    const payuData = await createResponse.json().catch(() => null) as PayUCreateResponse | null;
+    const result = payuData?.result;
+    const paymentUrl = result?.paymentLink;
+    const invoiceNumber = result?.invoiceNumber || txnid;
+    let safePaymentUrl = false;
+    try {
+      const u = new URL(paymentUrl || "");
+      safePaymentUrl = u.protocol === "https:" && (u.hostname === "pmny.in" || u.hostname.endsWith(".pmny.in") || u.hostname === "payu.in" || u.hostname.endsWith(".payu.in"));
+    } catch { safePaymentUrl = false; }
+
+    if (!createResponse.ok || payuData?.status !== 0 || !paymentUrl || !safePaymentUrl || invoiceNumber !== txnid) {
+      console.error("PayU Payment Link creation failed:", { httpStatus: createResponse.status, payuStatus: payuData?.status, message: payuData?.message });
+      await admin.from("payment_transactions").update({
+        status: "error",
+        raw_response: { integration: "payment_links", stage: "link_creation_failed", httpStatus: createResponse.status, payuStatus: payuData?.status, message: payuData?.message || null },
+      }).eq("txnid", txnid);
+      return NextResponse.json({ success: false, error: "PayU could not create the payment link. Please check the sandbox merchant permissions." }, { status: 502 });
+    }
+
+    await admin.from("payment_transactions").update({
+      raw_response: { integration: "payment_links", stage: "link_created", invoiceNumber, paymentLink: paymentUrl, payuResponse: payuData },
+    }).eq("txnid", txnid);
+
+    return NextResponse.json({ success: true, paymentUrl, transaction: { txnid, planCode: plan.code, planName: plan.name, amount } });
+  } catch (error) {
+    console.error("PayU Payment Link create error:", error);
+    return NextResponse.json({ success: false, error: "Unable to create a PayU payment link. Please try again." }, { status: 500 });
   }
 }
-
