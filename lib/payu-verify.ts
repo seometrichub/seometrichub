@@ -190,7 +190,7 @@ export async function fetchVerifiedPayUTransaction(
 
   if (origin !== "https://test.payu.in" && origin !== "https://secure.payu.in") return { verified: false, reason: "invalid_endpoint" };
   if ((process.env.VERCEL_GIT_COMMIT_REF === "backup/local-payu-work-20261018" ||
-       process.env.NEXT_PUBLIC_APP_URL?.replace(/\\/+$/, "") === "https://staging.seometrichub.com") &&
+       process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") === "https://staging.seometrichub.com") &&
       origin !== "https://test.payu.in") return { verified: false, reason: "unsafe_staging_endpoint" };
 
   const command = "verify_payment";
