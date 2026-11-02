@@ -91,7 +91,7 @@ export async function POST(request: Request) {
         invoiceNumber: txnid, isAmountFilledByCustomer: false, subAmount: amount,
         isPartialPaymentAllowed: false, maxPaymentsAllowed: 1,
         description: `SEOMETRICHUB ${plan.name}`, source: "API", currency: "INR",
-        successURL: `${appUrl}/?payment=pending&invoice=${encodeURIComponent(txnid)}`,
+        successURL: `${appUrl}/api/payu/callback?invoice=${encodeURIComponent(txnid)}`,
         failureURL: `${appUrl}/?payment=failed&invoice=${encodeURIComponent(txnid)}`,
         customer: { name: firstName, email: user.email, phone },
         udf: { udf1: user.id, udf2: String(plan.id), udf3: String(plan.code), udf4: txnid },
