@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
     const txnid = `SMH${Date.now()}${randomUUID().replace(/-/g, "").slice(0, 10)}`;
     const { error: insertError } = await admin.from("payment_transactions").insert({
-      user_id: user.id, plan_id: plan.id, provider: "payu_payment_link",
+      user_id: user.id, plan_id: plan.id, provider: "payu",
       txnid, mihpayid: null, status: "pending", amount, currency: "INR",
       raw_response: { integration: "payment_links", stage: "created_locally" },
     });
@@ -105,8 +105,17 @@ export async function POST(request: Request) {
     let safePaymentUrl = false;
     try {
       const u = new URL(paymentUrl || "");
-      safePaymentUrl = u.protocol === "https:" && (u.hostname === "pmny.in" || u.hostname.endsWith(".pmny.in") || u.hostname === "payu.in" || u.hostname.endsWith(".payu.in"));
+      safePaymentUrl = (u.protocol === "http:" || u.protocol === "https:") && (u.hostname === "pmny.in" || u.hostname.endsWith(".pmny.in"));
     } catch { safePaymentUrl = false; }
+
+    // PayU's published UAT sample currently returns http://*.pmny.in links.
+    // Upgrade only this exact PayU short-link domain to HTTPS before redirecting.
+    let redirectUrl = paymentUrl || "";
+    if (safePaymentUrl) {
+      const parsed = new URL(redirectUrl);
+      parsed.protocol = "https:";
+      redirectUrl = parsed.toString();
+    }
 
     if (!createResponse.ok || payuData?.status !== 0 || !paymentUrl || !safePaymentUrl || invoiceNumber !== txnid) {
       console.error("PayU Payment Link creation failed:", { httpStatus: createResponse.status, payuStatus: payuData?.status, message: payuData?.message });
@@ -118,10 +127,10 @@ export async function POST(request: Request) {
     }
 
     await admin.from("payment_transactions").update({
-      raw_response: { integration: "payment_links", stage: "link_created", invoiceNumber, paymentLink: paymentUrl, payuResponse: payuData },
+      raw_response: { integration: "payment_links", stage: "link_created", invoiceNumber, paymentLink: redirectUrl, payuResponse: payuData },
     }).eq("txnid", txnid);
 
-    return NextResponse.json({ success: true, paymentUrl, transaction: { txnid, planCode: plan.code, planName: plan.name, amount } });
+    return NextResponse.json({ success: true, paymentUrl: redirectUrl, transaction: { txnid, planCode: plan.code, planName: plan.name, amount } });
   } catch (error) {
     console.error("PayU Payment Link create error:", error);
     return NextResponse.json({ success: false, error: "Unable to create a PayU payment link. Please try again." }, { status: 500 });
