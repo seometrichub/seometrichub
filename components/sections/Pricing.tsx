@@ -21,7 +21,6 @@ type PayUResponse = {
   success?: boolean;
   error?: string;
   paymentUrl?: string;
-  fields?: Record<string, string>;
 };
 
 const plans: Plan[] = [
@@ -214,49 +213,33 @@ export default function Pricing() {
         return;
       }
 
-      if (!data.paymentUrl || !data.fields) {
-        setError("Invalid payment response. Please try again.");
+      if (!data.paymentUrl) {
+        setError("PayU did not return a valid payment link. Please try again.");
         return;
       }
 
-      // Defense in depth: never submit a live PayU payment from staging.
-      if (window.location.hostname === "staging.seometrichub.com") {
-        let destination: URL;
-        try {
-          destination = new URL(data.paymentUrl);
-        } catch {
-          setError("Invalid PayU checkout URL.");
-          return;
-        }
-        if (
-          destination.origin !== "https://test.payu.in" ||
-          destination.pathname !== "/_payment" ||
-          data.fields.surl !== "https://staging.seometrichub.com/api/payu/callback" ||
-          data.fields.furl !== "https://staging.seometrichub.com/api/payu/callback"
-        ) {
-          setError("Unsafe payment configuration blocked. Sandbox checkout is required.");
-          return;
-        }
+      let destination: URL;
+      try {
+        destination = new URL(data.paymentUrl);
+      } catch {
+        setError("Invalid PayU payment link.");
+        return;
       }
 
-      const form = document.createElement("form");
+      if (
+        destination.protocol !== "https:" ||
+        !(
+          destination.hostname === "pmny.in" ||
+          destination.hostname.endsWith(".pmny.in") ||
+          destination.hostname === "payu.in" ||
+          destination.hostname.endsWith(".payu.in")
+        )
+      ) {
+        setError("Unsafe payment link blocked.");
+        return;
+      }
 
-      form.method = "POST";
-      form.action = data.paymentUrl;
-      form.style.display = "none";
-
-      Object.entries(data.fields).forEach(([name, value]) => {
-        const input = document.createElement("input");
-
-        input.type = "hidden";
-        input.name = name;
-        input.value = String(value);
-
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
+      window.location.assign(destination.toString());
     } catch (checkoutError) {
       console.error("PayU checkout error:", checkoutError);
 
