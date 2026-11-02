@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
     const clientId = process.env.PAYU_CLIENT_ID;
     const clientSecret = process.env.PAYU_CLIENT_SECRET;
-    const merchantId = process.env.PAYU_MERCHANT_ID;
+    // Vercel env values can contain pasted line breaks; HTTP headers must be single-line.
+    const merchantId = process.env.PAYU_MERCHANT_ID?.replace(/\s+/g, "");
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
