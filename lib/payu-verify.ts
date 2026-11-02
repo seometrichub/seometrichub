@@ -154,3 +154,74 @@ export async function verifyPayUPayment(
     };
   }
 }
+
+
+export type PayUVerifiedTransaction = {
+  txnid: string;
+  mihpayid: string;
+  amount: number;
+  productinfo: string;
+  status: string;
+};
+
+/**
+ * Server-to-server reconciliation for a Payment Link redirect.
+ * The browser supplies only our invoice/transaction id; every paid field
+ * comes from PayU's verify_payment response.
+ */
+export async function fetchVerifiedPayUTransaction(
+  txnid: string,
+  expectedAmount: number,
+): Promise<{ verified: boolean; reason: string; transaction?: PayUVerifiedTransaction }> {
+  const key = process.env.PAYU_MERCHANT_KEY;
+  const salt = process.env.PAYU_MERCHANT_SALT;
+  const baseUrl = process.env.PAYU_BASE_URL;
+  if (!key || !salt || !baseUrl) return { verified: false, reason: "config_missing" };
+  if (!/^[A-Za-z0-9_-]{8,80}$/.test(txnid) || !Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+    return { verified: false, reason: "invalid_input" };
+  }
+
+  let origin: string;
+  try {
+    const endpoint = new URL(baseUrl);
+    if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash) return { verified: false, reason: "invalid_endpoint" };
+    origin = endpoint.origin;
+  } catch { return { verified: false, reason: "invalid_endpoint" }; }
+
+  if (origin !== "https://test.payu.in" && origin !== "https://secure.payu.in") return { verified: false, reason: "invalid_endpoint" };
+  if ((process.env.VERCEL_GIT_COMMIT_REF === "backup/local-payu-work-20261018" ||
+       process.env.NEXT_PUBLIC_APP_URL?.replace(/\\/+$/, "") === "https://staging.seometrichub.com") &&
+      origin !== "https://test.payu.in") return { verified: false, reason: "unsafe_staging_endpoint" };
+
+  const command = "verify_payment";
+  const hash = createHash("sha512").update(`${key}|${command}|${txnid}|${salt}`).digest("hex");
+  try {
+    const response = await fetch(`${origin}/merchant/postservice?form=2`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ key, command, var1: txnid, hash }).toString(),
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return { verified: false, reason: "payu_http_error" };
+    const data: any = await response.json();
+    const details = data?.transaction_details?.[txnid];
+    if (data?.status !== 1 || !details || typeof details !== "object") return { verified: false, reason: "transaction_not_found" };
+
+    const amount = Number(details.amt ?? details.amount);
+    const mihpayid = String(details.mihpayid ?? details.mihpayupid ?? "");
+    const verified = details.status?.toLowerCase() === "success" &&
+      String(details.txnid ?? txnid) === txnid &&
+      mihpayid !== "" && mihpayid !== "Not Found" &&
+      Number.isFinite(amount) && Math.abs(amount - expectedAmount) <= 0.01 &&
+      typeof details.productinfo === "string" && details.productinfo.length > 0;
+
+    if (!verified) return { verified: false, reason: "payment_mismatch" };
+    return {
+      verified: true, reason: "verified",
+      transaction: { txnid, mihpayid, amount, productinfo: details.productinfo, status: details.status },
+    };
+  } catch {
+    return { verified: false, reason: "verification_request_failed" };
+  }
+}
